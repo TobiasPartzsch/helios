@@ -43,7 +43,15 @@ npm install
 npm test
 ```
 
-(There is no full UI yet; the project currently focuses on the core calculations and tests.)
-
 ## Status
-This project is a work in progress. The core time and coordinate transforms are in place, along with basic Sun and Moon models and tests. Rendering and UI are still to come.
+This project is a work in progress. The core time and coordinate transforms are in place, along with basic Sun and Moon models and tests. Basic UI for I/O is in place. Next is rendering.
+
+## Recent Progress
+
+- **Build Pipeline**: Integrated **Vite** for fast TypeScript transpilation and a live development server.
+- **Telemetry Dashboard**: Implemented a browser-based control panel to input observer coordinates and UTC time.
+- **Time Synchronization**: 
+  - Centralized Julian Date calculations using the **Unix Epoch** (JD 2440587.5).
+  - Implemented dual-epoch support: **J2000.0** (for Sun/Sidereal models) and **J2000.5** (for the simplified Lunar model).
+  - Enforced **UTC** as the internal "System Truth" to avoid timezone-related drift in astronomical calculations.
+- **Verification**: Calibrated the engine against NASA/USNO records for the 2024 Vernal Equinox and Lunar Eclipse windows.
