@@ -1,6 +1,5 @@
-// src/core/bodies/moon.ts
-
 import type { EquatorialCoords } from "../coordinates";
+import { getDaysSinceJ2000, getDaysSinceJ2000_5 } from '../time/julian';
 
 function degToRad(deg: number): number {
     return (deg * Math.PI) / 180;
@@ -25,7 +24,7 @@ function normalizeRad(angle: number): number {
  * for given Julian Date. Matches the Sun module’s low-precision model.
  */
 function sunEclipticLongitudeRad(jd: number): number {
-    const n = jd - 2451545.0; // days since J2000.0
+    const n = getDaysSinceJ2000(jd)
 
     // Mean longitude L (deg)
     let L = 280.460 + 0.9856474 * n;
@@ -48,7 +47,7 @@ function sunEclipticLongitudeRad(jd: number): number {
  * Compute the Moon's approximate equatorial coordinates (RA/Dec) for a given Julian Date.
  */
 export function moonEquatorialCoordinates(jd: number): EquatorialCoords {
-    const D = jd - 2451543.5;
+    const D = getDaysSinceJ2000_5(jd)
 
     let Lp = 218.316 + 13.176396 * D;
     Lp = normalizeDeg(Lp);
@@ -125,7 +124,7 @@ export interface MoonPhaseInfo {
  */
 export function moonPhase(jd: number): MoonPhaseInfo {
     // Moon ecliptic longitude from our model
-    const D = jd - 2451543.5;
+    const D = getDaysSinceJ2000_5(jd)
     let Lp = 218.316 + 13.176396 * D;
     Lp = normalizeDeg(Lp);
     let Mm = 134.963 + 13.064993 * D;
@@ -161,24 +160,36 @@ export function moonPhase(jd: number): MoonPhaseInfo {
     const phaseAngleRad = Math.acos(Math.cos(delta));
 
     // Illuminated fraction
-    const illuminatedFraction = (1 + Math.cos(phaseAngleRad)) / 2;
+    // const illuminatedFraction = (1 + Math.cos(phaseAngleRad)) / 2;
+    const illuminatedFraction = (1 - Math.cos(delta)) / 2;
 
     // Normalized phase 0..1 (0 new, 0.5 full)
     const phase = (1 - Math.cos(delta)) / 2;
 
-    const phaseName = classifyPhase(phase);
+    const phaseName = classifyPhase(illuminatedFraction, delta);
 
     return { illuminatedFraction, phaseAngleRad, phase, phaseName };
 }
 
-function classifyPhase(phase: number): string {
-    // crude boundaries, tweak as you like
-    if (phase < 0.03 || phase > 0.97) return "New Moon";
-    if (phase < 0.22) return "Waxing Crescent";
-    if (phase < 0.28) return "First Quarter";
-    if (phase < 0.47) return "Waxing Gibbous";
-    if (phase < 0.53) return "Full Moon";
-    if (phase < 0.72) return "Waning Gibbous";
-    if (phase < 0.78) return "Last Quarter";
-    return "Waning Crescent";
+function classifyPhase(illuminatedFraction: number, deltaRad: number): string {
+    const deltaDeg = radToDeg(deltaRad);
+
+    // 1. Extreme Thresholds
+    if (illuminatedFraction < 0.03) return "New Moon";
+    if (illuminatedFraction > 0.97) return "Full Moon";
+
+    // 2. Identify if it's Waxing (0-180) or Waning (180-360)
+    const isWaxing = deltaDeg > 0 && deltaDeg < 180;
+
+    // 3. Quarters (near 50% illumination)
+    if (illuminatedFraction > 0.45 && illuminatedFraction < 0.55) {
+        return isWaxing ? "First Quarter" : "Last Quarter";
+    }
+
+    // 4. Crescent vs Gibbous
+    if (illuminatedFraction < 0.5) {
+        return isWaxing ? "Waxing Crescent" : "Waning Crescent";
+    } else {
+        return isWaxing ? "Waxing Gibbous" : "Waning Gibbous";
+    }
 }
