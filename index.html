@@ -9,7 +9,40 @@
 <body>
     <div id="app">
         <h1>Helios Project</h1>
-        <div id="output">Initializing celestial calculations...</div>
+    </div>
+    <div id="helios-ui">
+        <section id="inputs">
+            <h3>Observer Location</h3>
+            <div class="input-group">
+                <label>Lat: <input type="number" id="lat" value="52.5" step="0.1">°</label>
+                <label>Lon: <input type="number" id="lon" value="13.4" step="0.1">°</label>
+            </div>
+
+            <h3>System Time</h3>
+            <div class="time-input-row">
+                <input type="number" id="year" value="2023" style="width: 60px;"> .
+                <input type="number" id="month" value="10" min="1" max="12" style="width: 40px;"> .
+                <input type="number" id="day" value="27" min="1" max="31" style="width: 40px;">
+                 
+                <input type="time" id="clock-time" value="12:00" step="1">
+            </div>
+        </section>
+
+        <hr>
+
+        <section id="telemetry">
+            <h3>Celestial Telemetry</h3>
+            <div class="readout">
+                <p>UTC ISO: <span id="out-iso" class="mono">-</span></p>
+                <p>Julian Date: <span id="out-jd" class="mono">-</span></p>
+            </div>
+
+            <div class="readout">
+                <p>Sun Position: <span id="out-sun" class="mono">-</span></p>
+                <p>Moon Position: <span id="out-moon" class="mono">-</span></p>
+                <p>Moon Phase: <span id="out-phase" class="mono">-</span></p>
+            </div>
+        </section>
     </div>
     <script type="module" src="/src/main.ts"></script>
 </body>
