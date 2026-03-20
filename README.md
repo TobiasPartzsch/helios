@@ -55,3 +55,15 @@ This project is a work in progress. The core time and coordinate transforms are 
   - Implemented dual-epoch support: **J2000.0** (for Sun/Sidereal models) and **J2000.5** (for the simplified Lunar model).
   - Enforced **UTC** as the internal "System Truth" to avoid timezone-related drift in astronomical calculations.
 - **Verification**: Calibrated the engine against NASA/USNO records for the 2024 Vernal Equinox and Lunar Eclipse windows.
+
+## Recent Progress
+- **Dynamic Render Engine**: Implemented an Equirectangular sky map with automatic Hemisphere-swapping (South-centered for North, North-centered for South).
+- **Celestial Tracking**: Added 24-hour predictive paths for the Sun and Moon, utilizing custom sampling to close the "Lunar Gap."
+- **High-Fidelity Lunar Model**: Integrated a dedicated "Moon Face" renderer that calculates the local Position Angle (tilt) and illumination phase.
+- **Time Warp Engine**: Developed a `requestAnimationFrame` loop with adjustable simulation speeds (up to 10,000x).
+
+## Next Steps
+- **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
+- **Eclipse Predictor**: Implement a shadow-intersection check to detect Solar and Lunar eclipses.
+- **Horizon Silhouette**: Allow users to upload an SVG of their local horizon to see exactly when stars "rise" over their specific hills.
+- **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault.
