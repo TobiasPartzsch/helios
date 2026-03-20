@@ -193,3 +193,26 @@ function classifyPhase(illuminatedFraction: number, deltaRad: number): string {
         return isWaxing ? "Waxing Gibbous" : "Waning Gibbous";
     }
 }
+
+/**
+ * Calculates the precise illuminated fraction based on 
+ * the angular separation between the Sun and Moon.
+ */
+export function calculateIllumination(
+    sunEq: { ra: number, dec: number },
+    moonEq: { ra: number, dec: number }
+): number {
+    // Angular separation using spherical trigonometry
+    const cosPsi = Math.sin(sunEq.dec) * Math.sin(moonEq.dec) +
+        Math.cos(sunEq.dec) * Math.cos(moonEq.dec) *
+        Math.cos(sunEq.ra - moonEq.ra);
+
+    // Safety clamp for acos
+    const psi = Math.acos(Math.max(-1, Math.min(1, cosPsi)));
+
+    // For a rough approximation, the Phase Angle is roughly 180 - psi
+    const phaseAngle = Math.PI - psi;
+
+    // Illuminated fraction (0.0 to 1.0)
+    return (1 + Math.cos(phaseAngle)) / 2;
+}
