@@ -20,9 +20,8 @@ export function equatorialToHorizontal(
 ): HorizontalCoords {
     const { rightAscensionRad: ra, declinationRad: dec } = eq;
 
-    // Hour angle H = LST - RA
     let H = localSiderealTimeRad - ra;
-    H = normalizeAngleRad(H);
+    // (Normalization is good, but Math.sin/cos handle any value)
 
     const sinDec = Math.sin(dec);
     const cosDec = Math.cos(dec);
@@ -31,17 +30,21 @@ export function equatorialToHorizontal(
     const cosH = Math.cos(H);
     const sinH = Math.sin(H);
 
-    // Altitude
+    // Altitude - This part was actually fine!
     const sinAlt = sinDec * sinLat + cosDec * cosLat * cosH;
     const altitudeRad = Math.asin(sinAlt);
 
-    // Azimuth (measured from north, increasing to east)
-    const cosAlt = Math.cos(altitudeRad);
-    const sinAz = -cosDec * sinH / cosAlt;
-    const cosAz = (sinDec - sinAlt * sinLat) / (cosAlt * cosLat);
-    let azimuthRad = Math.atan2(sinAz, cosAz);
+    // Stable Azimuth using atan2(y, x)
+    // y = sin(H)
+    // x = cos(H) * sin(Lat) - tan(Dec) * cos(Lat)
+    // (We multiply both sides by cos(Dec) to avoid the tan(Dec) division)
+    const y = -cosDec * sinH;
+    const x = cosLat * sinDec - sinLat * cosDec * cosH;
 
-    azimuthRad = normalizeAngleRad(azimuthRad);
+    let azimuthRad = Math.atan2(y, x);
+
+    // Normalize to [0, 2PI]
+    azimuthRad = ((azimuthRad % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
 
     return { azimuthRad, altitudeRad };
 }
