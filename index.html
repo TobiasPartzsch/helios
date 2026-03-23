@@ -30,6 +30,15 @@
                     <input type="range" id="sim-speed" min="1" max="100" value="1">
                     <span id="speed-val">1</span>x
                 </label>
+
+                <!-- The Horizon Rendering Layer -->
+                <div class="controls-row horizon-layer">
+                    <strong>Horizon Profile:</strong>
+                    <button id="btn-pull-horizon" title="Pull profile from heywhatsthat.com">
+                        Fetch from API
+                    </button>
+                    <span id="horizon-status" class="status-msg">No profile</span>
+                </div>
             </div>
         </main>
         <aside id="controls">

@@ -105,3 +105,37 @@ button {
         width: 100%;
     }
 }
+
+.controls-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #1a1a1a;
+    border-radius: 6px;
+}
+
+.horizon-layer {
+    border-left: 3px solid #444;
+    /* Visually separate the "layer" controls */
+}
+
+.btn-label,
+#btn-pull-horizon {
+    display: inline-block;
+    /* Essential for padding/height to work */
+    padding: 6px 12px;
+    background-color: #eee;
+    /* That "white button" look */
+    color: #222;
+    /* Dark text on light background */
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    font-family: sans-serif;
+    text-align: center;
+    user-select: none;
+    /* Prevents text highlighting on click */
+}
