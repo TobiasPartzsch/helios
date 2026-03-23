@@ -66,4 +66,5 @@ This project is a work in progress. The core time and coordinate transforms are 
 - **Horizon Silhouette**: Allow users to upload an SVG of their local horizon to see exactly when stars "rise" over their specific hills. Maybe pull from https://www.heywhatsthat.com/?
 - **Eclipse Predictor**: Implement a shadow-intersection check to detect Solar and Lunar eclipses.
 - **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
+- **Direction Label Rendering**: Currently the away direction isn't very well readable.
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
