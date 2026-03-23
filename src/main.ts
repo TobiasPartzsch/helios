@@ -173,9 +173,8 @@ function animate(timestamp: number) {
         // Total speed = Unit * Multiplier (in ms per real ms)
         const totalSpeedFactor = unit * multiplier;
 
-        // Since dt is in seconds, we multiply by 1000 to get ms, 
-        // then apply our speed factor.
-        simTime += (dt * 1000) * totalSpeedFactor;
+        // Apply our speed factor.
+        simTime += dt * totalSpeedFactor;
 
         const date = new Date(simTime);
         syncUiFromDate(date);
