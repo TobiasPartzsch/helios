@@ -62,8 +62,8 @@ This project is a work in progress. The core time and coordinate transforms are 
 - **High-Fidelity Lunar Model**: Integrated a dedicated "Moon Face" renderer that calculates the local Position Angle (tilt) and illumination phase.
 - **Time Warp Engine**: Developed a `requestAnimationFrame` loop with adjustable simulation speeds (up to 10,000x).
 
-## Next Steps
-- **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
+## Next Steps by priority
+- **Horizon Silhouette**: Allow users to upload an SVG of their local horizon to see exactly when stars "rise" over their specific hills. Maybe pull from https://www.heywhatsthat.com/?
 - **Eclipse Predictor**: Implement a shadow-intersection check to detect Solar and Lunar eclipses.
-- **Horizon Silhouette**: Allow users to upload an SVG of their local horizon to see exactly when stars "rise" over their specific hills.
-- **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault.
+- **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
+- **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
