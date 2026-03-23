@@ -1,8 +1,9 @@
 import { moonEquatorialCoordinates, moonPhase } from './core/bodies/moon';
 import { sunEquatorialCoordinates } from './core/bodies/sun';
 import { equatorialToHorizontal } from './core/coordinates'; // Your coordinate logic
+import { formatEoT, formatHours } from './core/time/format';
 import { dateToJulianDate } from './core/time/julian';
-import { localSiderealTimeHours } from './core/time/sidereal';
+import { julianDateToGMSTHours, localSiderealTimeHours } from './core/time/sidereal';
 import { drawBody, drawBodyTrack, drawGrid, drawMoonFace, getEquirectangularXY, TrackConfig } from './render/skyCanvas';
 import './style.css';
 
@@ -19,6 +20,9 @@ const dayInput = document.getElementById('day') as HTMLInputElement;
 const clockTimeInput = document.getElementById('clock-time') as HTMLInputElement;
 
 const outJd = document.getElementById('out-jd')!;
+const outLmt = document.getElementById('out-lmt')!;
+const outLst = document.getElementById('out-lst')!;
+const outEot = document.getElementById('out-eot')!;
 const outSun = document.getElementById('out-sun')!;
 const outMoon = document.getElementById('out-moon')!;
 const outPhase = document.getElementById('out-phase')!;
@@ -32,7 +36,7 @@ function radToDeg(rad: number): number {
     return rad * (180 / Math.PI);
 }
 
-function update() {
+function update(providedJd?: number) {
     // Sync internal resolution to the CSS display size
     // This prevents "blurry" pixels on high-DPI screens
     if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
@@ -43,7 +47,7 @@ function update() {
     // Clear the previous frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Build date from input
+    // Build Julian Date from input if not provided
     const latDeg = parseFloat(latInput.value);
     const lonDeg = parseFloat(lonInput.value);
     const date = new Date(Date.UTC(
@@ -52,37 +56,48 @@ function update() {
         parseInt(dayInput.value),
         ...clockTimeInput.value.split(':').map(Number)
     ));
-
-    // Manual format: YYYY.MM.DD HH:mm:ss
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, '0');
-    const d = String(date.getDate()).padStart(2, '0');
-    const hh = String(date.getUTCHours()).padStart(2, '0');
-    const mm = String(date.getUTCMinutes()).padStart(2, '0');
-    const ss = String(date.getUTCSeconds()).padStart(2, '0');
-
-    const customFormat = `${y}.${m}.${d} ${hh}:${mm}:${ss}`;
+    const jd = providedJd ?? dateToJulianDate(new Date(Date.UTC(
+        parseInt(yearInput.value),
+        parseInt(monthInput.value) - 1,
+        parseInt(dayInput.value),
+        ...clockTimeInput.value.split(':').map(Number)
+    )));
 
     // Update the UI
-    document.getElementById('out-iso')!.innerText = customFormat;
-
-    // Julian Date
-    const jd = dateToJulianDate(date);
-
-    // Local Sidereal Time: Convert Hours to Radians
-    // (LST Hours * 15) = Degrees -> Degrees * (PI/180) = Radians
-    const lstHours = localSiderealTimeHours(jd, lonDeg);
-    const lstRad = lstHours * 15 * (Math.PI / 180);
 
     // Observer Latitude: Degrees to Radians
     const latRad = latDeg * (Math.PI / 180);
 
     // Calculate Celestial Positions
     const sunEq = sunEquatorialCoordinates(jd);
+
+    // Local Sidereal Time: Convert Hours to Radians
+    // (LST Hours * 15) = Degrees -> Degrees * (PI/180) = Radians
+    const lstHours = localSiderealTimeHours(jd, lonDeg);
+    const lstRad = lstHours * 15 * (Math.PI / 180);
+
     const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad);
     const moonEq = moonEquatorialCoordinates(jd);
     const moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad);
     const phaseInfo = moonPhase(jd);
+
+
+
+    // 2. Local Mean Time (LMT)
+    // LMT = UTC Hours + (Longitude / 15)
+    const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+    let lmtHours = utcHours + (lonDeg / 15.0);
+    lmtHours = ((lmtHours % 24) + 24) % 24; // Normalize to [0, 24]
+
+    // LST is where the Stars are. Sun RA is where the Sun is.
+    // The difference (LST - RA) is the Sun's Hour Angle.
+    const sunRAHours = sunEq.rightAscensionRad * (12 / Math.PI);
+    let eotHours = (lmtHours - 12) - (lstHours - sunRAHours);
+
+    // Update the UI Telemetry
+    document.getElementById('out-lst')!.innerText = formatHours(lstHours);
+    document.getElementById('out-lmt')!.innerText = formatHours(lmtHours);
+    document.getElementById('out-eot')!.innerText = formatEoT(eotHours);
 
     // Update Text I/O
     outJd.innerText = jd.toFixed(5);
@@ -123,20 +138,26 @@ function update() {
     drawBody(ctx, moonPos.x, moonPos.y, 8, '#acaa93'); // White Moon}
 
     drawMoonFace(faceCtx, phaseInfo.illuminatedFraction, sunHoriz, moonHoriz);
+
+    console.log("--- Celestial Debug ---");
+    console.log("UTC Date:", date.toUTCString());
+    console.log("Julian Date:", jd.toFixed(5));
+
+    // 1. Check the Sidereal Time (The Earth's rotation)
+    const gmst = julianDateToGMSTHours(jd);
+    const lst = localSiderealTimeHours(jd, lonDeg);
+    console.log("GMST (Hours):", gmst.toFixed(4));
+    console.log("Local Sidereal Time:", lst.toFixed(4));
+
+    // 2. Check the Sun's Position in the Stars
+    // At Equinox, Dec should be ~0, RA should be ~0 or ~24
+    console.log("Sun RA (Hours):", (sunEq.rightAscensionRad * 12 / Math.PI).toFixed(4));
+    console.log("Sun Dec (Deg):", (sunEq.declinationRad * 180 / Math.PI).toFixed(4));
+
+    // 3. Check the Horizontal Transform
+    console.log("Sun Altitude (Rad):", sunHoriz.altitudeRad.toFixed(2));
+    console.log("Sun Azimuth (Rad):", sunHoriz.azimuthRad.toFixed(2));
 }
-
-// Event Listeners
-[latInput, lonInput, yearInput, monthInput, dayInput, clockTimeInput].forEach(el => {
-    el?.addEventListener('input', update);
-});
-// Set initial time and run
-const now = new Date();
-yearInput.value = now.getFullYear().toString();
-monthInput.value = (now.getMonth() + 1).toString();
-dayInput.value = now.getDate().toString();
-clockTimeInput.value = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-
-update();
 
 function syncUiFromDate(date: Date) {
     yearInput.value = date.getUTCFullYear().toString();
@@ -148,17 +169,6 @@ function syncUiFromDate(date: Date) {
     const ss = String(date.getUTCSeconds()).padStart(2, '0');
     clockTimeInput.value = `${hh}:${mm}:${ss}`;
 }
-
-let isPlaying = false;
-let lastTimestamp = 0;
-
-// Initialize simTime from the current UI state
-let simTime = new Date(Date.UTC(
-    parseInt(yearInput.value),
-    parseInt(monthInput.value) - 1,
-    parseInt(dayInput.value),
-    ...clockTimeInput.value.split(':').map(Number)
-)).getTime();
 
 function animate(timestamp: number) {
     if (isPlaying) {
@@ -177,13 +187,30 @@ function animate(timestamp: number) {
         simTime += dt * totalSpeedFactor;
 
         const date = new Date(simTime);
+        const jd = dateToJulianDate(date);
+
+        // Update the UI purely for the human's benefit
         syncUiFromDate(date);
-        update();
+
+        // Pass the precise JD into the engine
+        update(jd);
     }
 
     lastTimestamp = timestamp;
     requestAnimationFrame(animate);
 }
+
+let isPlaying = false;
+let lastTimestamp = 0;
+
+// Initialize simTime from the current UI state
+let simTime = new Date(Date.UTC(
+    parseInt(yearInput.value),
+    parseInt(monthInput.value) - 1,
+    parseInt(dayInput.value),
+    ...clockTimeInput.value.split(':').map(Number)
+)).getTime();
+
 
 // Start the loop (it will just wait if isPlaying is false)
 requestAnimationFrame(animate);
@@ -196,17 +223,31 @@ document.getElementById('sim-speed')!.addEventListener('input', (e) => {
     document.getElementById('speed-val')!.innerText = val;
 });
 
-// Ensure manual inputs still work and update our internal simTime
+// 1. Initialize UI values to UTC Now
+const now = new Date();
+yearInput.value = now.getUTCFullYear().toString();
+monthInput.value = (now.getUTCMonth() + 1).toString();
+dayInput.value = now.getUTCDate().toString();
+clockTimeInput.value = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')}`;
+
+// 2. Set the Master State (simTime)
+simTime = now.getTime();
+
+// 3. Initial Render
+update(dateToJulianDate(now));
+
+// 4. Wire up listeners to handle the "State Update"
+const handleManualInput = () => {
+    const d = new Date(Date.UTC(
+        parseInt(yearInput.value),
+        parseInt(monthInput.value) - 1,
+        parseInt(dayInput.value),
+        ...clockTimeInput.value.split(':').map(Number)
+    ));
+    simTime = d.getTime();
+    update(dateToJulianDate(d));
+};
+
 [latInput, lonInput, yearInput, monthInput, dayInput, clockTimeInput].forEach(el => {
-    el?.addEventListener('input', () => {
-        // If the user types, update the internal state
-        const newDate = new Date(Date.UTC(
-            parseInt(yearInput.value),
-            parseInt(monthInput.value) - 1,
-            parseInt(dayInput.value),
-            ...clockTimeInput.value.split(':').map(Number)
-        ));
-        simTime = newDate.getTime();
-        update();
-    });
+    el?.addEventListener('input', handleManualInput);
 });
