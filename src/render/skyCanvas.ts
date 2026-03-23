@@ -82,13 +82,11 @@ export function drawGrid(
     }
 
     // 2. Draw Azimuth Lines (Meridians)
-    for (let azDeg = 0; azDeg <= 360; azDeg += 45) {
-        // Shift relative to our center (offset) and wrap [0, 360]
-        let shiftedAz = azDeg - centerOffset;
-        shiftedAz = ((shiftedAz % 360) + 360) % 360;
+    for (let azDeg = 0; azDeg < 360; azDeg += 45) {
+        const azRad = azDeg * (Math.PI / 180);
 
-        // Map [0, 360] to [0, width]
-        const x = (shiftedAz / 360) * width;
+        // Pass 0 for altitude as we only need the horizontal (X) position
+        const { x } = getEquirectangularXY(azRad, 0, dimensions, isSouthern);
 
         ctx.beginPath();
         ctx.moveTo(x, 0);
@@ -97,7 +95,10 @@ export function drawGrid(
 
         const label = getCardinalLabel(azDeg);
         if (label) {
-            ctx.fillText(label, x + 2, height - 5);
+            // Using textAlign: 'center' prevents labels from "drifting" 
+            // to the right of the line.
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, height - 5);
         }
     }
 }
