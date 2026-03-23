@@ -62,9 +62,18 @@ This project is a work in progress. The core time and coordinate transforms are 
 - **High-Fidelity Lunar Model**: Integrated a dedicated "Moon Face" renderer that calculates the local Position Angle (tilt) and illumination phase.
 - **Time Warp Engine**: Developed a `requestAnimationFrame` loop with adjustable simulation speeds (up to 10,000x).
 
+## Recent Progress
+- **Precision Time Engine**: Refactored to a "Single Source of Truth" model using `simTime` (Unix ms) to eliminate drift in high-speed simulations.
+- **Geodesic Accuracy**: Optimized the `equatorialToHorizontal` transform to resolve singularities at the Zenith and the Equator.
+- **Astronomical Dashboard**: 
+    - Implemented a "Master Telemetry" panel featuring **Local Sidereal Time (LST)**, **Local Mean Time (LMT)**, and the **Equation of Time (EoT)**.
+    - Standardized observer coordinates to include **Elevation (AMSL)**.
+- **Viewport UX**: Centralized animation and playback controls within the main viewport for an immersive observatory experience.
+
 ## Next Steps by priority
-- **Horizon Silhouette**: Allow users to upload an SVG of their local horizon to see exactly when stars "rise" over their specific hills. Maybe pull from https://www.heywhatsthat.com/?
-- **Eclipse Predictor**: Implement a shadow-intersection check to detect Solar and Lunar eclipses.
+- **Dynamic Horizon Integration**: Implement the `fetch` logic for [HeyWhatsThat](https://www.heywhatsthat.com/) to pull real-world 360° terrain profiles via their JSON API.
+- **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.- 
 - **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
 - **Direction Label Rendering**: Currently the away direction isn't very well readable.
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
+- **Atmospheric Refraction**: Incorporate elevation and pressure data to calculate the "optical" lift of the Sun and Moon near the horizon.
