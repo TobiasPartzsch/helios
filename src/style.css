@@ -139,3 +139,38 @@ button {
     user-select: none;
     /* Prevents text highlighting on click */
 }
+
+/* Container to put everything in one horizontal row */
+.observer-controls {
+    display: flex;
+    gap: 15px;
+    /* Space between the groups */
+    align-items: center;
+    flex-wrap: nowrap;
+    /* Prevent wrapping to a new line */
+    margin-bottom: 1rem;
+}
+
+/* Individual groups (Label + Input) */
+.input-group {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* Shrink the input boxes so they aren't 'browser-default' huge */
+.input-group input {
+    width: 60px;
+    /* Adjust as needed for your typical values */
+    padding: 2px 5px;
+    border: 1px solid #444;
+    background: #eee;
+    color: #222;
+}
+
+/* Optional: style the label tooltips specifically */
+.input-group label {
+    font-weight: bold;
+    cursor: help;
+    /* Shows a question mark cursor for the title/tooltip */
+}

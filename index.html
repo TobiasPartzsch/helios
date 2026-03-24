@@ -34,21 +34,34 @@
                 <!-- The Horizon Rendering Layer -->
                 <div class="controls-row horizon-layer">
                     <strong>Horizon Profile:</strong>
-                    <button id="btn-pull-horizon" title="Pull profile from heywhatsthat.com">
-                        Fetch from API
-                    </button>
-                    <span id="horizon-status" class="status-msg">No profile</span>
+                    <div class="input-group">
+                        <label for="horizon-id" title="HeyWhatsThat View ID">Horizon ID:</label>
+                        <input id="horizon-id" type="text" placeholder="e.g. GWI3IL1L" style="width: 100px;">
+                        <button id="btn-fetch-horizon">Get Horizon</button>
+                    </div> <span id="horizon-status" class="status-msg">No profile</span>
                 </div>
             </div>
         </main>
         <aside id="controls">
             <section id="inputs">
                 <h3>Observer Location</h3>
-                <div class="input-group">
-                    <label>Lat: <input type="number" id="lat" value="52.5" step="0.1">°</label>
-                    <label>Lon: <input type="number" id="lon" value="13.4" step="0.1">°</label>
-                </div>
+                <div class="observer-controls">
+                    <div class="input-group">
+                        <label for="lat">Lat:</label>
+                        <input id="lat" type="number" value="51.115833" step="0.1">
+                    </div>
 
+                    <div class="input-group">
+                        <label for="lon">Lon:</label>
+                        <input id="lon" type="number" value="13.638889" step="0.1">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="elevation" title="Above Mean Sea Level">ASML:</label>
+                        <input id="elevation" type="number" value="212" step="1">
+                        <span>m</span>
+                    </div>
+                </div>
                 <h3>UTC Time input</h3>
                 <div class="time-input-row">
                     <input type="number" id="year" value="2023" style="width: 60px;"> .
@@ -56,6 +69,7 @@
                     <input type="number" id="day" value="27" min="1" max="31" style="width: 40px;">
                      
                     <input type="time" id="clock-time" value="12:00" step="1">
+                    <!-- <input type="time" id="clock-time" value="12:00" step="3600" min="00:00" max="23:59" required> -->
                 </div>
             </section>
 

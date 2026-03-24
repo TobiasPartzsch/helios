@@ -14,6 +14,7 @@ const ctx = canvas.getContext('2d')!;
 // Selectors
 const latInput = document.getElementById('lat') as HTMLInputElement;
 const lonInput = document.getElementById('lon') as HTMLInputElement;
+const elevInput = document.getElementById('elevation') as HTMLInputElement;
 const yearInput = document.getElementById('year') as HTMLInputElement;
 const monthInput = document.getElementById('month') as HTMLInputElement;
 const dayInput = document.getElementById('day') as HTMLInputElement;
@@ -31,6 +32,9 @@ const outPhase = document.getElementById('out-phase')!;
 const moonFaceCanvas = document.getElementById('moon-face-canvas') as HTMLCanvasElement;
 const faceCtx = moonFaceCanvas.getContext('2d')!;
 
+// State for the terrain profile
+interface HorizonPoint { azimuth: number; altitude: number; }
+let currentHorizonProfile: HorizonPoint[] | null = null;
 
 function radToDeg(rad: number): number {
     return rad * (180 / Math.PI);
@@ -120,6 +124,25 @@ function update(providedJd?: number) {
     ctx.moveTo(0, dims.height / 2);
     ctx.lineTo(dims.width, dims.height / 2);
     ctx.stroke();
+
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 2;
+
+    if (currentHorizonProfile && currentHorizonProfile.length > 0) {
+        ctx.beginPath();
+        currentHorizonProfile.forEach((pt, index) => {
+            const pos = getEquirectangularXY(pt.azimuth, pt.altitude, dims, isSouthern);
+            if (index === 0) ctx.moveTo(pos.x, pos.y);
+            else ctx.lineTo(pos.x, pos.y);
+        });
+        ctx.stroke();
+    } else {
+        // Fallback: The flat sea-level line
+        ctx.beginPath();
+        ctx.moveTo(0, dims.height / 2);
+        ctx.lineTo(dims.width, dims.height / 2);
+        ctx.stroke();
+    }
 
     // Draw Sun Track (Orange/Yellow)
     const sunTrack: TrackConfig = { windowDays: 1.0, steps: 144, color: '#ffa500' };
@@ -248,6 +271,45 @@ const handleManualInput = () => {
     update(dateToJulianDate(d));
 };
 
-[latInput, lonInput, yearInput, monthInput, dayInput, clockTimeInput].forEach(el => {
-    el?.addEventListener('input', handleManualInput);
-});
+const fetchBtn = document.getElementById('btn-fetch-horizon') as HTMLButtonElement;
+
+fetchBtn.onclick = async () => {
+    const lat = latInput.value;
+    const lon = lonInput.value;
+    const elev = elevInput.value;
+
+    const lockList = [fetchBtn, latInput, lonInput, elevInput];
+    lockList.forEach(el => { if (el) el.disabled = true; });
+    fetchBtn.innerText = "Generating Profile (Wait 60s)...";
+
+    try {
+        console.log(`Requesting Horizon for Lat:${lat} Lon:${lon} Alt:${elev}m`);
+
+        // Use your Vite Proxy path
+        const url = `/api-horizon/horizon.json?lat=${lat}&lon=${lon}&elev=${elev}`;
+        const response = await fetch(url);
+
+        if (response.status === 504 || response.status === 408) {
+            throw new Error("Server is still crunching the numbers. Try again in a minute!");
+        }
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+
+        const data = await response.json();
+
+        // Map the points (remember to convert degrees to radians for your engine!)
+        currentHorizonProfile = data.map((pt: any) => ({
+            azimuth: pt.bearing * (Math.PI / 180),
+            altitude: pt.alt * (Math.PI / 180)
+        }));
+
+        console.log("Horizon profile loaded successfully!");
+        update();
+
+    } catch (err) {
+        console.error("The horizon vanished:", err);
+        alert(err instanceof Error ? err.message : "Connection failed.");
+    } finally {
+        lockList.forEach(el => { if (el) el.disabled = false; });
+        fetchBtn.innerText = "Get Horizon";
+    }
+};

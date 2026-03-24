@@ -70,10 +70,33 @@ This project is a work in progress. The core time and coordinate transforms are 
     - Standardized observer coordinates to include **Elevation (AMSL)**.
 - **Viewport UX**: Centralized animation and playback controls within the main viewport for an immersive observatory experience.
 
+## Recent Progress
+- **UI Refactoring**: 
+    - Implemented a compact **Observer Telemetry** row using Flexbox for Latitude, Longitude, and Elevation.
+    - Added **Tooltip (Title)** documentation for astronomical units (ASML).
+- **External Integration**: Prepared a proxied Fetch pipeline for **HeyWhatsThat** horizon profiles (awaiting third-party server stability).
+
 ## Next Steps by priority
-- **Dynamic Horizon Integration**: Implement the `fetch` logic for [HeyWhatsThat](https://www.heywhatsthat.com/) to pull real-world 360° terrain profiles via their JSON API.
-- **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.- 
+- **Dynamic Horizon Integration**: Implement the `fetch` logic for [HeyWhatsThat](https://www.heywhatsthat.com/) to pull real-world 360° terrain profiles via their JSON API. (Might not be possible. Website is not as cooperative as hoped.)
+- **Refactor main.ts**: At least move out the movement calculations to core/orbit.ts
+- **Refraction**: Model atmospheric refraction based on the International Standard Atmosphere (ISA).
+- **Rework model**: Base the calculations more clearly on orbit and spin. (Keppler Elements)
+- **Sky Color**: Change the sky depending on time representing illumination from the sun and moon.
 - **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
+- **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.
 - **Direction Label Rendering**: Currently the away direction isn't very well readable.
+- **Animate location changes**: Enable the import of location changes at specific dates to simulate travel.
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
 - **Atmospheric Refraction**: Incorporate elevation and pressure data to calculate the "optical" lift of the Sun and Moon near the horizon.
+
+
+## Comments from Boots for next session:
+The “Clean” Architecture for Helios:
+The Model (core/): This should be "Headless." It takes a JulianDate and returns coordinates. It shouldn't know that a browser or a canvas even exists. This makes your Keplerian math testable with vitest.
+The View (render/): These are your "Painters." They take coordinates and a CanvasContext and draw shapes. They don't care how the Sun's position was calculated; they just care where it goes on the screen.
+The Controller (main.ts): This becomes the "Orchestrator." Its only job is to:
+Listen for UI events (Inputs/Buttons).
+Run the requestAnimationFrame loop.
+Pass data from the Model to the View.
+How to refactor tomorrow:
+I suggest creating a SkyRenderer class or a set of functions in src/render/ that encapsulates all the ctx calls.
