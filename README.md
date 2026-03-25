@@ -88,9 +88,9 @@ This project is a work in progress. The core time and coordinate transforms are 
     - Migrated to CSS Variables for a unified "Helios" theme and restructured the viewport into a "Two-Row Command Strip" for better simulation/environment hierarchy.
 - **Code Hygiene**:
     - Purged legacy SVG logic and modularized the rendering pipeline, significantly reducing the footprint and complexity of main.ts.
+    - Extracted angle conversions out of main.ts
 
 ## Next Steps by priority
-- **Angle Conversion**: In some parts of main.ts we access Math.PI instead of using a helper function for conversion from radians to degrees and vice-versa
 - **Context Refactor**: Move access to the canvas context out of main.ts
 - **Local Timezone time**: Calculate the local clock based on timezone.
 - **Refraction**: Model atmospheric refraction based on the International Standard Atmosphere (ISA).
