@@ -2,6 +2,7 @@ import { moonEquatorialCoordinates, moonPhase } from './core/bodies/moon';
 import { sunEquatorialCoordinates } from './core/bodies/sun';
 import { equatorialToHorizontal } from './core/coordinates'; // Your coordinate logic
 import { fetchHorizonById, HorizonProfile } from './core/horizon';
+import { degToRad, radToDeg, radToHours } from './core/math';
 import { formatEoT, formatHours } from './core/time/format';
 import { dateToJulianDate } from './core/time/julian';
 import { julianDateToGMSTHours, localSiderealTimeHours } from './core/time/sidereal';
@@ -17,10 +18,6 @@ const faceCtx = UI.canvas.moonFace.getContext('2d')!;
 
 // State for the terrain profile
 let currentHorizonProfile: HorizonProfile | null = null;
-
-function radToDeg(rad: number): number {
-    return rad * (180 / Math.PI);
-}
 
 function update(providedJd?: number) {
     // Destructure the parts of the UI we need for this function
@@ -44,7 +41,7 @@ function update(providedJd?: number) {
     // Update the UI
 
     // Observer Latitude: Degrees to Radians
-    const latRad = state.latDeg * (Math.PI / 180);
+    const latRad = degToRad(state.latDeg)
 
     // Calculate Celestial Positions
     const sunEq = sunEquatorialCoordinates(jd);
@@ -52,7 +49,7 @@ function update(providedJd?: number) {
     // Local Sidereal Time: Convert Hours to Radians
     // (LST Hours * 15) = Degrees -> Degrees * (PI/180) = Radians
     const lstHours = localSiderealTimeHours(jd, state.lonDeg);
-    const lstRad = lstHours * 15 * (Math.PI / 180);
+    const lstRad = degToRad(lstHours * 15);
 
     const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad);
     const moonEq = moonEquatorialCoordinates(jd);
@@ -69,7 +66,7 @@ function update(providedJd?: number) {
 
     // LST is where the Stars are. Sun RA is where the Sun is.
     // The difference (LST - RA) is the Sun's Hour Angle.
-    const sunRAHours = sunEq.rightAscensionRad * (12 / Math.PI);
+    const sunRAHours = radToHours(sunEq.rightAscensionRad);
     let eotHours = (lmtHours - 12) - (lstHours - sunRAHours);
 
     // Update the UI Telemetry
@@ -134,7 +131,7 @@ function update(providedJd?: number) {
     // 2. Check the Sun's Position in the Stars
     // At Equinox, Dec should be ~0, RA should be ~0 or ~24
     console.log("Sun RA (Hours):", (sunEq.rightAscensionRad * 12 / Math.PI).toFixed(4));
-    console.log("Sun Dec (Deg):", (sunEq.declinationRad * 180 / Math.PI).toFixed(4));
+    console.log("Sun Dec (Deg):", radToDeg(sunEq.declinationRad).toFixed(4));
 
     // 3. Check the Horizontal Transform
     console.log("Sun Altitude (Rad):", sunHoriz.altitudeRad.toFixed(2));
