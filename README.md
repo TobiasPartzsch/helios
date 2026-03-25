@@ -76,18 +76,32 @@ This project is a work in progress. The core time and coordinate transforms are 
     - Added **Tooltip (Title)** documentation for astronomical units (ASML).
 - **External Integration**: Prepared a proxied Fetch pipeline for **HeyWhatsThat** horizon profiles (awaiting third-party server stability).
 
+## Recent Progress
+- **Horizon Integration**:
+    - Successfully implemented real-world terrain fetching via the HeyWhatsThat API.
+- **Refined Data Model**:
+    - Created a "Sanitized" HorizonProfile model in the core, insulating the engine from raw API quirks and handling coordinate normalization (Highest-Peak filtering).
+- **UI Architecture Refactor**:
+    - Centralized all DOM interactions into a Single Source of Truth (UI registry).
+    - Implemented an Observer State Harvester to unify manual and simulated data entry.
+- **Visual Design System**:
+    - Migrated to CSS Variables for a unified "Helios" theme and restructured the viewport into a "Two-Row Command Strip" for better simulation/environment hierarchy.
+- **Code Hygiene**:
+    - Purged legacy SVG logic and modularized the rendering pipeline, significantly reducing the footprint and complexity of main.ts.
+
 ## Next Steps by priority
-- **Dynamic Horizon Integration**: Implement the `fetch` logic for [HeyWhatsThat](https://www.heywhatsthat.com/) to pull real-world 360° terrain profiles via their JSON API. (Might not be possible. Website is not as cooperative as hoped.)
-- **Refactor main.ts**: At least move out the movement calculations to core/orbit.ts
+- **Angle Conversion**: In some parts of main.ts we access Math.PI instead of using a helper function for conversion from radians to degrees and vice-versa
+- **Context Refactor**: Move access to the canvas context out of main.ts
+- **Local Timezone time**: Calculate the local clock based on timezone.
 - **Refraction**: Model atmospheric refraction based on the International Standard Atmosphere (ISA).
 - **Rework model**: Base the calculations more clearly on orbit and spin. (Keppler Elements)
 - **Sky Color**: Change the sky depending on time representing illumination from the sun and moon.
 - **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
 - **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.
 - **Direction Label Rendering**: Currently the away direction isn't very well readable.
+- **Zoom**: Horizon line is very difficult to see at many locations so being able to zoom in would make sense.
 - **Animate location changes**: Enable the import of location changes at specific dates to simulate travel.
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
-- **Atmospheric Refraction**: Incorporate elevation and pressure data to calculate the "optical" lift of the Sun and Moon near the horizon.
 
 
 ## Comments from Boots for next session:
@@ -100,3 +114,10 @@ Run the requestAnimationFrame loop.
 Pass data from the Model to the View.
 How to refactor tomorrow:
 I suggest creating a SkyRenderer class or a set of functions in src/render/ that encapsulates all the ctx calls.
+
+3. Suggested Commit Strategy for the Refactor
+If you choose to clean up the CSS and the Main logic tomorrow, I will remind you to keep them atomic:
+
+Commit 1 (Style): refactor: modularize CSS into reusable utility classes
+Commit 2 (Model): refactor: extract celestial math to core/orbit.ts (The "Logic")
+Commit 3 (View): refactor: move canvas drawing to render/skyRenderer.ts (The "Paint")
