@@ -1,9 +1,16 @@
 import { equatorialToHorizontal } from "../core/coordinates/horizontal";
+import { HorizonProfile } from "../core/horizon";
 import { localSiderealTimeHours } from "../core/time/sidereal";
 
 export interface CanvasDimensions {
     width: number;
     height: number;
+}
+
+export interface TrackConfig {
+    windowDays: number; // e.g., 1.0 for Sun, 1.05 for Moon
+    steps: number;      // Higher for faster bodies
+    color: string;
 }
 
 /**
@@ -226,8 +233,44 @@ export function drawMoonFace(
     ctx.restore();
 }
 
-export interface TrackConfig {
-    windowDays: number; // e.g., 1.0 for Sun, 1.05 for Moon
-    steps: number;      // Higher for faster bodies
-    color: string;
+/**
+ * Draws the terrain horizon profile onto the celestial canvas.
+ */
+export function drawHorizon(
+    ctx: CanvasRenderingContext2D,
+    profile: HorizonProfile,
+    dimensions: { width: number, height: number },
+    isSouthern: boolean
+) {
+    const { points } = profile;
+    if (points.length === 0) return;
+
+    ctx.save(); // Protect the global state
+    ctx.beginPath();
+
+    // Use our design tokens (or hardcoded for now until we refactor colors)
+    ctx.strokeStyle = "#4ade80";
+    ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
+
+    points.forEach((pt, index) => {
+        const pos = getEquirectangularXY(pt.azimuthRad, pt.altitudeRad, dimensions, isSouthern);
+
+        if (index === 0) {
+            ctx.moveTo(pos.x, pos.y);
+        } else {
+            // Check for wrap-around jump at the canvas edges (width/2 threshold)
+            const lastPoint = points[index - 1];
+            const lastPos = getEquirectangularXY(lastPoint.azimuthRad, lastPoint.altitudeRad, dimensions, isSouthern);
+
+            if (Math.abs(pos.x - lastPos.x) > dimensions.width / 2) {
+                ctx.moveTo(pos.x, pos.y);
+            } else {
+                ctx.lineTo(pos.x, pos.y);
+            }
+        }
+    });
+
+    ctx.stroke();
+    ctx.restore();
 }

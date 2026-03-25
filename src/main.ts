@@ -5,7 +5,7 @@ import { fetchHorizonById, HorizonProfile } from './core/horizon';
 import { formatEoT, formatHours } from './core/time/format';
 import { dateToJulianDate } from './core/time/julian';
 import { julianDateToGMSTHours, localSiderealTimeHours } from './core/time/sidereal';
-import { drawBody, drawBodyTrack, drawGrid, drawMoonFace, getEquirectangularXY, TrackConfig } from './render/skyCanvas';
+import { drawBody, drawBodyTrack, drawGrid, drawHorizon, drawMoonFace, getEquirectangularXY, TrackConfig } from './render/skyCanvas';
 import './style.css';
 
 // Main Canvas
@@ -130,27 +130,8 @@ function update(providedJd?: number) {
     ctx.lineTo(dims.width, dims.height / 2);
     ctx.stroke();
 
-    if (currentHorizonProfile && currentHorizonProfile.points.length > 0) {
-        ctx.beginPath();
-        ctx.strokeStyle = "#4ade80"; // Bright green for testing
-        ctx.lineWidth = 2;
-
-        currentHorizonProfile.points.forEach((pt, index) => {
-            const pos = getEquirectangularXY(
-                pt.azimuthRad,
-                pt.altitudeRad,
-                dims,
-                isSouthern
-            ); if (index === 0) ctx.moveTo(pos.x, pos.y);
-            else ctx.lineTo(pos.x, pos.y);
-        });
-        ctx.stroke();
-    } else {
-        // Fallback: The flat sea-level line
-        ctx.beginPath();
-        ctx.moveTo(0, dims.height / 2);
-        ctx.lineTo(dims.width, dims.height / 2);
-        ctx.stroke();
+    if (currentHorizonProfile) {
+        drawHorizon(ctx, currentHorizonProfile, dims, isSouthern);
     }
 
     // Draw Sun Track (Orange/Yellow)
