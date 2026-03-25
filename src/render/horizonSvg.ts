@@ -1,6 +1,6 @@
 interface HorizonPoint {
-    azimuth: number;
-    altitude: number;
+    azimuth: number; // 0 to 360, north-aligned
+    altitude: number; // Degrees above/below local horizon}
 }
 
 async function fetchHorizon(id: string): Promise<HorizonPoint[]> {
