@@ -7,36 +7,13 @@ import { dateToJulianDate } from './core/time/julian';
 import { julianDateToGMSTHours, localSiderealTimeHours } from './core/time/sidereal';
 import { drawBody, drawBodyTrack, drawGrid, drawHorizon, drawMoonFace, getEquirectangularXY, TrackConfig } from './render/skyCanvas';
 import './style.css';
+import { getObserverState, UI } from './ui/elements';
 
 // Main Canvas
-const canvas = document.getElementById('sky-canvas') as HTMLCanvasElement;
-const ctx = canvas.getContext('2d')!;
-
-// Selectors
-const latInput = document.getElementById('lat') as HTMLInputElement;
-const lonInput = document.getElementById('lon') as HTMLInputElement;
-const elevInput = document.getElementById('elevation') as HTMLInputElement;
-const yearInput = document.getElementById('year') as HTMLInputElement;
-const monthInput = document.getElementById('month') as HTMLInputElement;
-const dayInput = document.getElementById('day') as HTMLInputElement;
-const clockTimeInput = document.getElementById('clock-time') as HTMLInputElement;
-
-const outJd = document.getElementById('out-jd')!;
-const outLmt = document.getElementById('out-lmt')!;
-const outLst = document.getElementById('out-lst')!;
-const outEot = document.getElementById('out-eot')!;
-const outSun = document.getElementById('out-sun')!;
-const outMoon = document.getElementById('out-moon')!;
-const outPhase = document.getElementById('out-phase')!;
+const ctx = UI.canvas.main.getContext('2d')!;
 
 // Moon Canvas
-const moonFaceCanvas = document.getElementById('moon-face-canvas') as HTMLCanvasElement;
-const faceCtx = moonFaceCanvas.getContext('2d')!;
-
-// Horizon controls
-const fetchBtn = document.getElementById('btn-fetch-horizon') as HTMLButtonElement;
-const horizonIdInput = document.getElementById('horizon-id') as HTMLInputElement;
-const horizonStatus = document.getElementById('horizon-status') as HTMLLabelElement;
+const faceCtx = UI.canvas.moonFace.getContext('2d')!;
 
 // State for the terrain profile
 let currentHorizonProfile: HorizonProfile | null = null;
@@ -46,43 +23,35 @@ function radToDeg(rad: number): number {
 }
 
 function update(providedJd?: number) {
+    // Destructure the parts of the UI we need for this function
+    const { inputs, outputs, canvas } = UI;
+
     // Sync internal resolution to the CSS display size
     // This prevents "blurry" pixels on high-DPI screens
-    if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
+    const mainCanvas = canvas.main
+    if (mainCanvas.width !== mainCanvas.clientWidth || mainCanvas.height !== mainCanvas.clientHeight) {
+        mainCanvas.width = mainCanvas.clientWidth;
+        mainCanvas.height = mainCanvas.clientHeight;
     }
 
     // Clear the previous frame
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
 
     // Build Julian Date from input if not provided
-    const latDeg = parseFloat(latInput.value);
-    const lonDeg = parseFloat(lonInput.value);
-    const date = new Date(Date.UTC(
-        parseInt(yearInput.value),
-        parseInt(monthInput.value) - 1, // Months still 0-indexed
-        parseInt(dayInput.value),
-        ...clockTimeInput.value.split(':').map(Number)
-    ));
-    const jd = providedJd ?? dateToJulianDate(new Date(Date.UTC(
-        parseInt(yearInput.value),
-        parseInt(monthInput.value) - 1,
-        parseInt(dayInput.value),
-        ...clockTimeInput.value.split(':').map(Number)
-    )));
+    const state = getObserverState();
+    const jd = providedJd ?? dateToJulianDate(state.date);
 
     // Update the UI
 
     // Observer Latitude: Degrees to Radians
-    const latRad = latDeg * (Math.PI / 180);
+    const latRad = state.latDeg * (Math.PI / 180);
 
     // Calculate Celestial Positions
     const sunEq = sunEquatorialCoordinates(jd);
 
     // Local Sidereal Time: Convert Hours to Radians
     // (LST Hours * 15) = Degrees -> Degrees * (PI/180) = Radians
-    const lstHours = localSiderealTimeHours(jd, lonDeg);
+    const lstHours = localSiderealTimeHours(jd, state.lonDeg);
     const lstRad = lstHours * 15 * (Math.PI / 180);
 
     const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad);
@@ -94,8 +63,8 @@ function update(providedJd?: number) {
 
     // 2. Local Mean Time (LMT)
     // LMT = UTC Hours + (Longitude / 15)
-    const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
-    let lmtHours = utcHours + (lonDeg / 15.0);
+    const utcHours = state.date.getUTCHours() + state.date.getUTCMinutes() / 60 + state.date.getUTCSeconds() / 3600;
+    let lmtHours = utcHours + (state.lonDeg / 15.0);
     lmtHours = ((lmtHours % 24) + 24) % 24; // Normalize to [0, 24]
 
     // LST is where the Stars are. Sun RA is where the Sun is.
@@ -104,21 +73,21 @@ function update(providedJd?: number) {
     let eotHours = (lmtHours - 12) - (lstHours - sunRAHours);
 
     // Update the UI Telemetry
-    document.getElementById('out-lst')!.innerText = formatHours(lstHours);
-    document.getElementById('out-lmt')!.innerText = formatHours(lmtHours);
-    document.getElementById('out-eot')!.innerText = formatEoT(eotHours);
+    outputs.lst.innerText = formatHours(lstHours);
+    outputs.lmt.innerText = formatHours(lmtHours);
+    outputs.eot.innerText = formatEoT(eotHours);
 
     // Update Text I/O
-    outJd.innerText = jd.toFixed(5);
-    outSun.innerText = `Alt: ${radToDeg(sunHoriz.altitudeRad).toFixed(2)}°, Az: ${radToDeg(sunHoriz.azimuthRad).toFixed(2)}°`;
-    outMoon.innerText = `Alt: ${radToDeg(moonHoriz.altitudeRad).toFixed(2)}°, Az: ${radToDeg(moonHoriz.azimuthRad).toFixed(2)}°`;
-    outPhase.innerText = `${phaseInfo.phaseName} (${(phaseInfo.illuminatedFraction * 100).toFixed(1)}%)`;
+    outputs.jd.innerText = jd.toFixed(5);
+    outputs.sun.innerText = `Alt: ${radToDeg(sunHoriz.altitudeRad).toFixed(2)}°, Az: ${radToDeg(sunHoriz.azimuthRad).toFixed(2)}°`;
+    outputs.moon.innerText = `Alt: ${radToDeg(moonHoriz.altitudeRad).toFixed(2)}°, Az: ${radToDeg(moonHoriz.azimuthRad).toFixed(2)}°`;
+    outputs.phase.innerText = `${phaseInfo.phaseName} (${(phaseInfo.illuminatedFraction * 100).toFixed(1)}%)`;
 
     // Basic Canvas Drawing
-    const dims = { width: canvas.width, height: canvas.height };
-    const isSouthern = latDeg < 0;
+    const dims = { width: mainCanvas.width, height: mainCanvas.height };
+    const isSouthern = state.latDeg < 0;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
 
     drawGrid(ctx, dims, isSouthern);
 
@@ -136,11 +105,11 @@ function update(providedJd?: number) {
 
     // Draw Sun Track (Orange/Yellow)
     const sunTrack: TrackConfig = { windowDays: 1.0, steps: 144, color: '#ffa500' };
-    drawBodyTrack(ctx, jd, latRad, lonDeg, dims, isSouthern, sunEquatorialCoordinates, sunTrack);
+    drawBodyTrack(ctx, jd, latRad, state.lonDeg, dims, isSouthern, sunEquatorialCoordinates, sunTrack);
 
     // Draw Moon Track (Grey/White)
     const moonTrack: TrackConfig = { windowDays: 1.05, steps: 144, color: '#888' };
-    drawBodyTrack(ctx, jd, latRad, lonDeg, dims, isSouthern, moonEquatorialCoordinates, moonTrack);
+    drawBodyTrack(ctx, jd, latRad, state.lonDeg, dims, isSouthern, moonEquatorialCoordinates, moonTrack);
 
     // Draw the Sun
     const sunPos = getEquirectangularXY(sunHoriz.azimuthRad, sunHoriz.altitudeRad, dims, isSouthern);
@@ -153,12 +122,12 @@ function update(providedJd?: number) {
     drawMoonFace(faceCtx, phaseInfo.illuminatedFraction, sunHoriz, moonHoriz);
 
     console.log("--- Celestial Debug ---");
-    console.log("UTC Date:", date.toUTCString());
+    console.log("UTC Date:", state.date.toUTCString());
     console.log("Julian Date:", jd.toFixed(5));
 
     // 1. Check the Sidereal Time (The Earth's rotation)
     const gmst = julianDateToGMSTHours(jd);
-    const lst = localSiderealTimeHours(jd, lonDeg);
+    const lst = localSiderealTimeHours(jd, state.lonDeg);
     console.log("GMST (Hours):", gmst.toFixed(4));
     console.log("Local Sidereal Time:", lst.toFixed(4));
 
@@ -173,25 +142,23 @@ function update(providedJd?: number) {
 }
 
 function syncUiFromDate(date: Date) {
-    yearInput.value = date.getUTCFullYear().toString();
-    monthInput.value = (date.getUTCMonth() + 1).toString();
-    dayInput.value = date.getUTCDate().toString();
+    UI.inputs.year.value = date.getUTCFullYear().toString();
+    UI.inputs.month.value = (date.getUTCMonth() + 1).toString();
+    UI.inputs.day.value = date.getUTCDate().toString();
 
     const hh = String(date.getUTCHours()).padStart(2, '0');
     const mm = String(date.getUTCMinutes()).padStart(2, '0');
     const ss = String(date.getUTCSeconds()).padStart(2, '0');
-    clockTimeInput.value = `${hh}:${mm}:${ss}`;
+    UI.inputs.clockTime.value = `${hh}:${mm}:${ss}`;
 }
 
 function animate(timestamp: number) {
     if (isPlaying) {
         const dt = timestamp - lastTimestamp;
-        const speed = parseFloat((document.getElementById('sim-speed') as HTMLInputElement).value);
+        const unit = parseFloat((UI.select.timeUnit).value);
+        const multiplier = parseFloat((UI.inputs.simSpeed).value);
 
-        const unit = parseFloat((document.getElementById('time-unit') as HTMLSelectElement).value);
-        const multiplier = parseFloat((document.getElementById('sim-speed') as HTMLInputElement).value);
-
-        document.getElementById('speed-val')!.innerText = speed.toString();
+        UI.slider.speedVal.innerText = multiplier.toString();
 
         // Total speed = Unit * Multiplier (in ms per real ms)
         const totalSpeedFactor = unit * multiplier;
@@ -218,10 +185,10 @@ let lastTimestamp = 0;
 
 // Initialize simTime from the current UI state
 let simTime = new Date(Date.UTC(
-    parseInt(yearInput.value),
-    parseInt(monthInput.value) - 1,
-    parseInt(dayInput.value),
-    ...clockTimeInput.value.split(':').map(Number)
+    parseInt(UI.inputs.year.value),
+    parseInt(UI.inputs.month.value) - 1,
+    parseInt(UI.inputs.day.value),
+    ...UI.inputs.clockTime.value.split(':').map(Number)
 )).getTime();
 
 
@@ -229,19 +196,19 @@ let simTime = new Date(Date.UTC(
 requestAnimationFrame(animate);
 
 // Listeners
-document.getElementById('btn-play')!.onclick = () => isPlaying = true;
-document.getElementById('btn-pause')!.onclick = () => isPlaying = false;
-document.getElementById('sim-speed')!.addEventListener('input', (e) => {
+UI.buttons.play.onclick = () => isPlaying = true;
+UI.buttons.pause.onclick = () => isPlaying = false;
+UI.inputs.simSpeed.addEventListener('input', (e) => {
     const val = (e.target as HTMLInputElement).value;
-    document.getElementById('speed-val')!.innerText = val;
+    UI.slider.speedVal!.innerText = val;
 });
 
 // 1. Initialize UI values to UTC Now
 const now = new Date();
-yearInput.value = now.getUTCFullYear().toString();
-monthInput.value = (now.getUTCMonth() + 1).toString();
-dayInput.value = now.getUTCDate().toString();
-clockTimeInput.value = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')}`;
+UI.inputs.year.value = now.getUTCFullYear().toString();
+UI.inputs.month.value = (now.getUTCMonth() + 1).toString();
+UI.inputs.day.value = now.getUTCDate().toString();
+UI.inputs.clockTime.value = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')}`;
 
 // 2. Set the Master State (simTime)
 simTime = now.getTime();
@@ -252,41 +219,44 @@ update(dateToJulianDate(now));
 // 4. Wire up listeners to handle the "State Update"
 const handleManualInput = () => {
     const d = new Date(Date.UTC(
-        parseInt(yearInput.value),
-        parseInt(monthInput.value) - 1,
-        parseInt(dayInput.value),
-        ...clockTimeInput.value.split(':').map(Number)
+        parseInt(UI.inputs.year.value),
+        parseInt(UI.inputs.month.value) - 1,
+        parseInt(UI.inputs.day.value),
+        ...UI.inputs.clockTime.value.split(':').map(Number)
     ));
     simTime = d.getTime();
     update(dateToJulianDate(d));
 };
 
 
-fetchBtn.onclick = async () => {
-    const horizonId = horizonIdInput.value.trim();
+UI.buttons.fetchHorizon.onclick = async () => {
+    // Destructure the parts of the UI we need for this function
+    const { inputs, outputs, buttons } = UI;
+
+    const horizonId = inputs.horizonId.value.trim();
     if (!horizonId) return;
 
     // Lock UI and show status
-    fetchBtn.disabled = true;
-    horizonStatus.innerText = "Connecting to Celestial Server...";
+    UI.buttons.fetchHorizon.disabled = true;
+    UI.outputs.horizonStatus.innerText = "Connecting to Celestial Server...";
 
     try {
         // Now calling our clean fetch!
         currentHorizonProfile = await fetchHorizonById(horizonId);
 
         // 3. Update Inputs from the metadata (The "Workaround" now hidden in the profile)
-        latInput.value = currentHorizonProfile.observer.lat.toString();
-        lonInput.value = currentHorizonProfile.observer.lon.toString();
-        elevInput.value = currentHorizonProfile.observer.elev.toString();
+        UI.inputs.lat.value = currentHorizonProfile.observer.lat.toString();
+        UI.inputs.lon.value = currentHorizonProfile.observer.lon.toString();
+        UI.inputs.elev.value = currentHorizonProfile.observer.elev.toString();
 
-        horizonStatus.innerText = `ID: ${currentHorizonProfile.id} (${currentHorizonProfile.points.length} pts)`;
+        UI.outputs.horizonStatus.innerText = `ID: ${currentHorizonProfile.id} (${currentHorizonProfile.points.length} pts)`;
         update(); // Trigger your main loop update
 
     } catch (err) {
         console.error("Horizon vanished:", err);
-        horizonStatus.innerText = "Horizon Error";
+        outputs.horizonStatus.innerText = "Horizon Error";
         alert(err instanceof Error ? err.message : "Connection failed.");
     } finally {
-        fetchBtn.disabled = false;
+        buttons.fetchHorizon.disabled = false;
     }
 };
