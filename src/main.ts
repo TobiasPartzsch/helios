@@ -125,14 +125,18 @@ function update(providedJd?: number) {
     ctx.lineTo(dims.width, dims.height / 2);
     ctx.stroke();
 
-    ctx.strokeStyle = '#333';
-    ctx.lineWidth = 2;
-
     if (currentHorizonProfile && currentHorizonProfile.length > 0) {
         ctx.beginPath();
+        ctx.strokeStyle = "#4ade80"; // Bright green for testing
+        ctx.lineWidth = 2;
+
         currentHorizonProfile.forEach((pt, index) => {
-            const pos = getEquirectangularXY(pt.azimuth, pt.altitude, dims, isSouthern);
-            if (index === 0) ctx.moveTo(pos.x, pos.y);
+            const pos = getEquirectangularXY(
+                pt.azimuth,
+                pt.altitude,
+                dims,
+                isSouthern
+            ); if (index === 0) ctx.moveTo(pos.x, pos.y);
             else ctx.lineTo(pos.x, pos.y);
         });
         ctx.stroke();
@@ -272,21 +276,16 @@ const handleManualInput = () => {
 };
 
 const fetchBtn = document.getElementById('btn-fetch-horizon') as HTMLButtonElement;
+const horizonIdInput = document.getElementById('horizon-id') as HTMLInputElement;
 
 fetchBtn.onclick = async () => {
-    const lat = latInput.value;
-    const lon = lonInput.value;
-    const elev = elevInput.value;
-
-    const lockList = [fetchBtn, latInput, lonInput, elevInput];
-    lockList.forEach(el => { if (el) el.disabled = true; });
-    fetchBtn.innerText = "Generating Profile (Wait 60s)...";
+    const id = horizonIdInput.value
 
     try {
-        console.log(`Requesting Horizon for Lat:${lat} Lon:${lon} Alt:${elev}m`);
+        console.log(`Getting horizon view for ID: ${id}`);
 
         // Use your Vite Proxy path
-        const url = `/api-horizon/horizon.json?lat=${lat}&lon=${lon}&elev=${elev}`;
+        const url = `https://www.heywhatsthat.com/api/horizon.json?id=${horizonIdInput.value.trim()}`;
         const response = await fetch(url);
 
         if (response.status === 504 || response.status === 408) {
@@ -296,11 +295,43 @@ fetchBtn.onclick = async () => {
 
         const data = await response.json();
 
-        // Map the points (remember to convert degrees to radians for your engine!)
-        currentHorizonProfile = data.map((pt: any) => ({
-            azimuth: pt.bearing * (Math.PI / 180),
-            altitude: pt.alt * (Math.PI / 180)
-        }));
+        // Map the points
+        const horizonData = data.horizon || [];
+
+        // Harvest metadata from the first point in the array
+        const firstPoint = horizonData[0];
+
+        if (firstPoint.elev) {
+            elevInput.value = parseFloat(firstPoint.elev).toString();
+            console.log("Harvested Elevation from profile:", firstPoint.elev);
+        }
+
+        // Synchronize UI inputs with the profile's origin
+        if (data.lat && data.lon) {
+            latInput.value = data.lat;
+            lonInput.value = data.lon;
+        }
+
+        // Create a map to store the highest altitude for each unique azimuth
+        const highestPoints = new Map<number, number>();
+
+        horizonData.forEach((pt: any) => {
+            const az = parseFloat(pt.az || 0);
+            const alt = parseFloat(pt.alt || 0);
+
+            // If we haven't seen this azimuth, or this one is higher (peaks of mountains!)
+            if (!highestPoints.has(az) || alt > (highestPoints.get(az) || -90)) {
+                highestPoints.set(az, alt);
+            }
+        });
+
+        // Convert that Map back into your sorted internal model and convert to radians
+        currentHorizonProfile = Array.from(highestPoints.entries())
+            .map(([az, alt]) => ({
+                azimuth: az * (Math.PI / 180),
+                altitude: alt * (Math.PI / 180)
+            }))
+            .sort((a, b) => a.azimuth - b.azimuth); // Ensure they draw from Left to Right
 
         console.log("Horizon profile loaded successfully!");
         update();
@@ -308,8 +339,5 @@ fetchBtn.onclick = async () => {
     } catch (err) {
         console.error("The horizon vanished:", err);
         alert(err instanceof Error ? err.message : "Connection failed.");
-    } finally {
-        lockList.forEach(el => { if (el) el.disabled = false; });
-        fetchBtn.innerText = "Get Horizon";
     }
 };
