@@ -1,6 +1,7 @@
 import { moonEquatorialCoordinates, moonPhase } from './core/bodies/moon';
 import { sunEquatorialCoordinates } from './core/bodies/sun';
 import { equatorialToHorizontal } from './core/coordinates'; // Your coordinate logic
+import { fetchHorizonById, HorizonProfile } from './core/horizon';
 import { formatEoT, formatHours } from './core/time/format';
 import { dateToJulianDate } from './core/time/julian';
 import { julianDateToGMSTHours, localSiderealTimeHours } from './core/time/sidereal';
@@ -32,9 +33,13 @@ const outPhase = document.getElementById('out-phase')!;
 const moonFaceCanvas = document.getElementById('moon-face-canvas') as HTMLCanvasElement;
 const faceCtx = moonFaceCanvas.getContext('2d')!;
 
+// Horizon controls
+const fetchBtn = document.getElementById('btn-fetch-horizon') as HTMLButtonElement;
+const horizonIdInput = document.getElementById('horizon-id') as HTMLInputElement;
+const horizonStatus = document.getElementById('horizon-status') as HTMLLabelElement;
+
 // State for the terrain profile
-interface HorizonPoint { azimuth: number; altitude: number; }
-let currentHorizonProfile: HorizonPoint[] | null = null;
+let currentHorizonProfile: HorizonProfile | null = null;
 
 function radToDeg(rad: number): number {
     return rad * (180 / Math.PI);
@@ -125,15 +130,15 @@ function update(providedJd?: number) {
     ctx.lineTo(dims.width, dims.height / 2);
     ctx.stroke();
 
-    if (currentHorizonProfile && currentHorizonProfile.length > 0) {
+    if (currentHorizonProfile && currentHorizonProfile.points.length > 0) {
         ctx.beginPath();
         ctx.strokeStyle = "#4ade80"; // Bright green for testing
         ctx.lineWidth = 2;
 
-        currentHorizonProfile.forEach((pt, index) => {
+        currentHorizonProfile.points.forEach((pt, index) => {
             const pos = getEquirectangularXY(
-                pt.azimuth,
-                pt.altitude,
+                pt.azimuthRad,
+                pt.altitudeRad,
                 dims,
                 isSouthern
             ); if (index === 0) ctx.moveTo(pos.x, pos.y);
@@ -275,69 +280,32 @@ const handleManualInput = () => {
     update(dateToJulianDate(d));
 };
 
-const fetchBtn = document.getElementById('btn-fetch-horizon') as HTMLButtonElement;
-const horizonIdInput = document.getElementById('horizon-id') as HTMLInputElement;
 
 fetchBtn.onclick = async () => {
-    const id = horizonIdInput.value
+    const horizonId = horizonIdInput.value.trim();
+    if (!horizonId) return;
+
+    // Lock UI and show status
+    fetchBtn.disabled = true;
+    horizonStatus.innerText = "Connecting to Celestial Server...";
 
     try {
-        console.log(`Getting horizon view for ID: ${id}`);
+        // Now calling our clean fetch!
+        currentHorizonProfile = await fetchHorizonById(horizonId);
 
-        // Use your Vite Proxy path
-        const url = `https://www.heywhatsthat.com/api/horizon.json?id=${horizonIdInput.value.trim()}`;
-        const response = await fetch(url);
+        // 3. Update Inputs from the metadata (The "Workaround" now hidden in the profile)
+        latInput.value = currentHorizonProfile.observer.lat.toString();
+        lonInput.value = currentHorizonProfile.observer.lon.toString();
+        elevInput.value = currentHorizonProfile.observer.elev.toString();
 
-        if (response.status === 504 || response.status === 408) {
-            throw new Error("Server is still crunching the numbers. Try again in a minute!");
-        }
-        if (!response.ok) throw new Error(`API Error: ${response.status}`);
-
-        const data = await response.json();
-
-        // Map the points
-        const horizonData = data.horizon || [];
-
-        // Harvest metadata from the first point in the array
-        const firstPoint = horizonData[0];
-
-        if (firstPoint.elev) {
-            elevInput.value = parseFloat(firstPoint.elev).toString();
-            console.log("Harvested Elevation from profile:", firstPoint.elev);
-        }
-
-        // Synchronize UI inputs with the profile's origin
-        if (data.lat && data.lon) {
-            latInput.value = data.lat;
-            lonInput.value = data.lon;
-        }
-
-        // Create a map to store the highest altitude for each unique azimuth
-        const highestPoints = new Map<number, number>();
-
-        horizonData.forEach((pt: any) => {
-            const az = parseFloat(pt.az || 0);
-            const alt = parseFloat(pt.alt || 0);
-
-            // If we haven't seen this azimuth, or this one is higher (peaks of mountains!)
-            if (!highestPoints.has(az) || alt > (highestPoints.get(az) || -90)) {
-                highestPoints.set(az, alt);
-            }
-        });
-
-        // Convert that Map back into your sorted internal model and convert to radians
-        currentHorizonProfile = Array.from(highestPoints.entries())
-            .map(([az, alt]) => ({
-                azimuth: az * (Math.PI / 180),
-                altitude: alt * (Math.PI / 180)
-            }))
-            .sort((a, b) => a.azimuth - b.azimuth); // Ensure they draw from Left to Right
-
-        console.log("Horizon profile loaded successfully!");
-        update();
+        horizonStatus.innerText = `ID: ${currentHorizonProfile.id} (${currentHorizonProfile.points.length} pts)`;
+        update(); // Trigger your main loop update
 
     } catch (err) {
-        console.error("The horizon vanished:", err);
+        console.error("Horizon vanished:", err);
+        horizonStatus.innerText = "Horizon Error";
         alert(err instanceof Error ? err.message : "Connection failed.");
+    } finally {
+        fetchBtn.disabled = false;
     }
 };
