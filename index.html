@@ -10,34 +10,38 @@
     <div id="helios-root">
         <main id="viewport">
             <canvas id="sky-canvas"></canvas>
-            <div class="animation-controls">
-                <button id="btn-play">▶ Play</button>
-                <button id="btn-pause">⏸ Pause</button>
-                <label>Unit:
-                    <select id="time-unit">
-                        <option value="1">Real Time</option>
-                        <option value="60">Minute / sec</option>
-                        <option value="3600">Hour / sec</option>
-                        <option value="86400">Day / sec</option>
-                        <option value="604800">Week / sec</option>
-                    </select>
-                </label>
+            <!-- The Command Strip Container -->
+            <footer class="command-strip-container">
+                <!-- Row 1: Time & Simulation -->
+                <div class="animation-controls">
+                    <button id="btn-play">▶ Play</button>
+                    <button id="btn-pause">⏸ Pause</button>
+                    <label>Unit:
+                        <select id="time-unit">
+                            <option value="1">Real Time</option>
+                            <option value="60">Minute / sec</option>
+                            <option value="3600">Hour / sec</option>
+                            <option value="86400">Day / sec</option>
+                            <option value="604800">Week / sec</option>
+                        </select>
+                    </label>
 
-                <label>Multiplier:
-                    <input type="range" id="sim-speed" min="1" max="100" value="1">
-                    <span id="speed-val">1</span>x
-                </label>
+                    <label>Multiplier:
+                        <input type="range" id="sim-speed" min="1" max="100" value="1">
+                        <span id="speed-val">1</span>x
+                    </label>
 
-                <!-- The Horizon Rendering Layer -->
-                <div class="controls-row horizon-layer">
-                    <strong>Horizon Profile:</strong>
-                    <div class="input-group">
-                        <label for="horizon-id" title="HeyWhatsThat View ID">Horizon ID:</label>
-                        <input id="horizon-id" type="text" placeholder="e.g. GWI3IL1L" style="width: 100px;">
-                        <button id="btn-fetch-horizon">Get Horizon</button>
-                    </div> <span id="horizon-status" class="status-msg">No profile</span>
+                    <!-- Row 2: Environment & Horizon -->
+                    <div class="horizon-controls">
+                        <strong>Horizon Profile:</strong>
+                        <div class="input-group">
+                            <label for="horizon-id">ID:</label>
+                            <input id="horizon-id" type="text" placeholder="GWI3IL1L" style="width: 80px;">
+                            <button id="btn-fetch-horizon">Get Horizon</button>
+                        </div>
+                        <span id="horizon-status" class="status-msg">No profile loaded</span>
+                    </div>
                 </div>
-            </div>
         </main>
         <aside id="controls">
             <h1>Helios Project</h1>

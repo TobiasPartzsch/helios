@@ -43,6 +43,33 @@ body {
     overflow: hidden;
 }
 
+command-strip-container {
+    display: flex;
+    flex-direction: column;
+    /* Stack our strips */
+    background: rgba(0, 0, 0, 0.9);
+    border-top: 2px solid var(--color-border);
+}
+
+.animation-controls,
+.horizon-controls {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    gap: 15px;
+    /* Consistent gap between buttons/labels */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.horizon-controls {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.85rem;
+    color: var(--color-text-main);
+    justify-content: flex-start;
+    /* Ensure everything is left-aligned */
+}
+
 #sky-canvas {
     width: 100%;
     height: auto;
