@@ -37,9 +37,9 @@ function update(providedJd?: number) {
     const sunEq = sunEquatorialCoordinates(jd);
     const lstHours = localSiderealTimeHours(jd, state.lonDeg);
     const lstRad = degToRad(lstHours * 15);
-    const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad);
+    const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
     const moonEq = moonEquatorialCoordinates(jd);
-    const moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad);
+    const moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad, state.refractionModel);
     const phaseInfo = moonPhase(jd);
 
     // Telemetry
@@ -67,6 +67,7 @@ function update(providedJd?: number) {
         sunHoriz,
         moonHoriz,
         horizonProfile: currentHorizonProfile,
+        refractionModel: state.refractionModel,
     });
 
     moonFaceRenderer.render({
@@ -119,14 +120,6 @@ function animate(timestamp: number) {
 // Start the loop (it will just wait if isPlaying is false)
 requestAnimationFrame(animate);
 
-// Listeners
-UI.buttons.play.onclick = () => isPlaying = true;
-UI.buttons.pause.onclick = () => isPlaying = false;
-UI.inputs.simSpeed.addEventListener('input', (e) => {
-    const val = (e.target as HTMLInputElement).value;
-    UI.slider.speedVal!.innerText = val;
-});
-
 // 1. Initialize UI values to UTC Now
 const now = new Date();
 UI.inputs.year.value = now.getUTCFullYear().toString();
@@ -156,3 +149,12 @@ initHorizonFetch((profile) => {
     currentHorizonProfile = profile;
     update();
 });
+
+// Listeners
+UI.buttons.play.onclick = () => isPlaying = true;
+UI.buttons.pause.onclick = () => isPlaying = false;
+UI.inputs.simSpeed.addEventListener('input', (e) => {
+    const val = (e.target as HTMLInputElement).value;
+    UI.slider.speedVal!.innerText = val;
+});
+UI.select.refraction.addEventListener('change', handleManualInput);

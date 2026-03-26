@@ -1,6 +1,7 @@
 import { moonEquatorialCoordinates } from "../core/bodies/moon";
 import { sunEquatorialCoordinates } from "../core/bodies/sun";
 import { HorizontalCoords } from "../core/coordinates";
+import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
 import { drawBody, drawBodyTrack, drawGrid, drawHorizon, getEquirectangularXY, TrackConfig } from "./skyCanvas";
 
@@ -11,6 +12,7 @@ interface SkyRenderState {
     sunHoriz: HorizontalCoords;
     moonHoriz: HorizontalCoords;
     horizonProfile: HorizonProfile | null;
+    refractionModel: RefractionModel;
 }
 
 export class SkyRenderer {
@@ -29,7 +31,7 @@ export class SkyRenderer {
         return { width: canvas.width, height: canvas.height };
     }
 
-    render({ jd, latRad, lonDeg, sunHoriz, moonHoriz, horizonProfile }: SkyRenderState): void {
+    render({ jd, latRad, lonDeg, sunHoriz, moonHoriz, horizonProfile, refractionModel }: SkyRenderState): void {
         const dims = this.syncResolution();
         const isSouthern = latRad < 0;
         const ctx = this.ctx;
@@ -53,11 +55,11 @@ export class SkyRenderer {
 
         // Draw Sun Track (Orange/Yellow)
         const sunTrack: TrackConfig = { windowDays: 1.0, steps: 144, color: '#ffa500' };
-        drawBodyTrack(ctx, jd, latRad, lonDeg, dims, isSouthern, sunEquatorialCoordinates, sunTrack);
+        drawBodyTrack(ctx, jd, latRad, lonDeg, dims, isSouthern, sunEquatorialCoordinates, sunTrack, refractionModel);
 
         // Draw Moon Track (Grey/White)
         const moonTrack: TrackConfig = { windowDays: 1.05, steps: 144, color: '#888' };
-        drawBodyTrack(ctx, jd, latRad, lonDeg, dims, isSouthern, moonEquatorialCoordinates, moonTrack);
+        drawBodyTrack(ctx, jd, latRad, lonDeg, dims, isSouthern, moonEquatorialCoordinates, moonTrack, refractionModel);
 
         // Draw the Sun
         const sunPos = getEquirectangularXY(sunHoriz.azimuthRad, sunHoriz.altitudeRad, dims, isSouthern);

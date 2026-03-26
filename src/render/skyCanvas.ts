@@ -1,4 +1,5 @@
 import { equatorialToHorizontal } from "../core/coordinates/horizontal";
+import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
 import { localSiderealTimeHours } from "../core/time/sidereal";
 
@@ -129,7 +130,8 @@ export function drawBodyTrack(
     dimensions: { width: number, height: number },
     isSouthern: boolean,
     getEqCoords: (jd: number) => { rightAscensionRad: number, declinationRad: number },
-    config: TrackConfig
+    config: TrackConfig,
+    refractionModel: RefractionModel = 'none',
 ) {
     const { width, height } = dimensions;
     const { windowDays, steps, color } = config;
@@ -152,7 +154,7 @@ export function drawBodyTrack(
         const sampleJd = (jd - 0.5) + (i * stepInDays);
         const eq = getEqCoords(sampleJd);
         const lstRad = localSiderealTimeHours(sampleJd, lonDeg) * 15 * (Math.PI / 180);
-        const horiz = equatorialToHorizontal(eq, latRad, lstRad);
+        const horiz = equatorialToHorizontal(eq, latRad, lstRad, refractionModel);
 
         const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dimensions, isSouthern);
 

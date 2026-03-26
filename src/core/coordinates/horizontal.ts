@@ -1,4 +1,5 @@
 import type { EquatorialCoords, HorizontalCoords } from "./index";
+import { applyRefraction, RefractionModel } from "./refraction";
 
 function normalizeAngleRad(angle: number): number {
     const twoPi = 2 * Math.PI;
@@ -16,7 +17,8 @@ function normalizeAngleRad(angle: number): number {
 export function equatorialToHorizontal(
     eq: EquatorialCoords,
     latitudeRad: number,
-    localSiderealTimeRad: number
+    localSiderealTimeRad: number,
+    refractionModel: RefractionModel = 'none',
 ): HorizontalCoords {
     const { rightAscensionRad: ra, declinationRad: dec } = eq;
 
@@ -46,5 +48,8 @@ export function equatorialToHorizontal(
     // Normalize to [0, 2PI]
     azimuthRad = ((azimuthRad % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
 
-    return { azimuthRad, altitudeRad };
+    return {
+        azimuthRad,
+        altitudeRad: applyRefraction(altitudeRad, refractionModel)
+    };
 }

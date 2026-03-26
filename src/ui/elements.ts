@@ -1,3 +1,5 @@
+import { RefractionModel } from "../core/coordinates/refraction";
+
 export const UI = {
     // Canvases
     canvas: {
@@ -42,6 +44,7 @@ export const UI = {
     // Selects
     select: {
         timeUnit: document.getElementById('time-unit') as HTMLSelectElement,
+        refraction: document.getElementById('refraction') as HTMLSelectElement,
     },
     // Slider
     slider: {
@@ -54,6 +57,7 @@ export function getObserverState() {
         latDeg: parseFloat(UI.inputs.lat.value),
         lonDeg: parseFloat(UI.inputs.lon.value),
         elevM: parseFloat(UI.inputs.elev.value),
+        refractionModel: (UI.select.refraction.value as RefractionModel),
         date: new Date(Date.UTC(
             parseInt(UI.inputs.year.value),
             parseInt(UI.inputs.month.value) - 1,

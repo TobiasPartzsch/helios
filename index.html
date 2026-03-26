@@ -59,9 +59,19 @@
                     </div>
 
                     <div class="input-group">
-                        <label for="elevation" title="Above Mean Sea Level">ASML:</label>
+                        <label for="elevation" title="Above Mean Sea Level">AMSL:</label>
                         <input id="elevation" type="number" value="212" step="1">
                         <span>m</span>
+                    </div>
+                </div>
+                <h3>Atmosphere</h3>
+                <div class="observer-controls">
+                    <div class="input-group">
+                        <label for="refraction" title="Atmospheric refraction model">Refraction:</label>
+                        <select id="refraction">
+                            <option value="none">None</option>
+                            <option value="bennett">Simple (Bennett 1982)</option>
+                        </select>
                     </div>
                 </div>
                 <h3>UTC Time input</h3>
