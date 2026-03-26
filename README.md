@@ -90,17 +90,26 @@ This project is a work in progress. The core time and coordinate transforms are 
     - Purged legacy SVG logic and modularized the rendering pipeline, significantly reducing the footprint and complexity of main.ts.
     - Extracted angle conversions out of main.ts
 
+## Recent Progress
+- **Renderer Refactor**: Extracted `SkyRenderer` and `MoonFaceRenderer` classes from `main.ts`,
+  each owning their canvas context and resize logic.
+- **UI Architecture**: Moved `syncUiFromDate` to `ui/elements.ts` and horizon fetch logic to 
+  `ui/horizonController.ts`, reducing `main.ts` from ~300 to 158 lines.
+- **Atmospheric Refraction**: Implemented Bennett (1982) formula in `core/coordinates/refraction.ts`
+  with a dropdown selector in the observer panel. Defaults to none, preserving existing behavior.
+- **Dependency Audit**: Evaluated `geo-tz` and `tzlookup` for local timezone detection; both 
+  incompatible with browser environment. LMT retained as the astronomically correct alternative.
+
 ## Next Steps by priority
-- **Context Refactor**: Move access to the canvas context out of main.ts
-- **Local Timezone time**: Calculate the local clock based on timezone.
-- **Refraction**: Model atmospheric refraction based on the International Standard Atmosphere (ISA).
 - **Rework model**: Base the calculations more clearly on orbit and spin. (Keppler Elements)
-- **Sky Color**: Change the sky depending on time representing illumination from the sun and moon.
 - **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
 - **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.
-- **Direction Label Rendering**: Currently the away direction isn't very well readable.
+- **Voyage Mode**: Import a JSON (later CSV, GPX) waypoint list and animate observer position over time,
+  interpolating along great circle routes. Demonstrates why globe geometry produces 
+  "curved" flight paths and shows the sky shifting continuously across hemispheres.
+- **Direction Label Rendering**: Currently the away direction isn't very well readable. Easy win whenever we have a little time left
 - **Zoom**: Horizon line is very difficult to see at many locations so being able to zoom in would make sense.
-- **Animate location changes**: Enable the import of location changes at specific dates to simulate travel.
+- **Sky Color**: Change the sky depending on time representing illumination from the sun and moon. Probably not worth it.
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
 
 
