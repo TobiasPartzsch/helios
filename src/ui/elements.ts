@@ -63,6 +63,17 @@ export function getObserverState() {
     };
 }
 
+export function syncUiFromDate(date: Date): void {
+    UI.inputs.year.value = date.getUTCFullYear().toString();
+    UI.inputs.month.value = (date.getUTCMonth() + 1).toString();
+    UI.inputs.day.value = date.getUTCDate().toString();
+    UI.inputs.clockTime.value = [
+        date.getUTCHours(),
+        date.getUTCMinutes(),
+        date.getUTCSeconds()
+    ].map(n => String(n).padStart(2, '0')).join(':');
+}
+
 // startup check
 Object.entries(UI).forEach(([group, elements]) => {
     Object.entries(elements).forEach(([name, el]) => {

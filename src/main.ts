@@ -1,7 +1,7 @@
 import { moonEquatorialCoordinates, moonPhase } from './core/bodies/moon';
 import { sunEquatorialCoordinates } from './core/bodies/sun';
 import { equatorialToHorizontal } from './core/coordinates';
-import { fetchHorizonById, HorizonProfile } from './core/horizon';
+import { HorizonProfile } from './core/horizon';
 import { degToRad, radToDeg, radToHours } from './core/math';
 import { formatEoT, formatHours } from './core/time/format';
 import { dateToJulianDate } from './core/time/julian';
@@ -10,6 +10,7 @@ import { MoonFaceRenderer } from './render/moonFaceRenderer';
 import { SkyRenderer } from './render/skyRenderer';
 import './style.css';
 import { getObserverState, UI } from './ui/elements';
+import { initHorizonFetch } from './ui/horizonController';
 
 // Renderers
 const skyRenderer = new SkyRenderer(UI.canvas.main);
@@ -151,35 +152,7 @@ const handleManualInput = () => {
     update(dateToJulianDate(d));
 };
 
-
-UI.buttons.fetchHorizon.onclick = async () => {
-    // Destructure the parts of the UI we need for this function
-    const { inputs, outputs, buttons } = UI;
-
-    const horizonId = inputs.horizonId.value.trim();
-    if (!horizonId) return;
-
-    // Lock UI and show status
-    UI.buttons.fetchHorizon.disabled = true;
-    UI.outputs.horizonStatus.innerText = "Connecting to Celestial Server...";
-
-    try {
-        // Now calling our clean fetch!
-        currentHorizonProfile = await fetchHorizonById(horizonId);
-
-        // 3. Update Inputs from the metadata (The "Workaround" now hidden in the profile)
-        UI.inputs.lat.value = currentHorizonProfile.observer.lat.toString();
-        UI.inputs.lon.value = currentHorizonProfile.observer.lon.toString();
-        UI.inputs.elev.value = currentHorizonProfile.observer.elev.toString();
-
-        UI.outputs.horizonStatus.innerText = `ID: ${currentHorizonProfile.id} (${currentHorizonProfile.points.length} pts)`;
-        update(); // Trigger your main loop update
-
-    } catch (err) {
-        console.error("Horizon vanished:", err);
-        outputs.horizonStatus.innerText = "Horizon Error";
-        alert(err instanceof Error ? err.message : "Connection failed.");
-    } finally {
-        buttons.fetchHorizon.disabled = false;
-    }
-};
+initHorizonFetch((profile) => {
+    currentHorizonProfile = profile;
+    update();
+});
