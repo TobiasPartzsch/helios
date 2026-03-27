@@ -142,6 +142,7 @@ update(dateToJulianDate(now));
 
 // Manual input handler
 const handleManualInput = () => {
+    console.log("handleManualInput called");
     const d = new Date(
         Date.UTC(
             parseInt(UI.inputs.year.value),
@@ -165,7 +166,12 @@ UI.buttons.pause.onclick = () => (isPlaying = false);
 UI.inputs.simSpeed.addEventListener("input", (e) => {
     UI.slider.speedVal.innerText = (e.target as HTMLInputElement).value;
 });
-UI.select.refraction.addEventListener("change", handleManualInput);
+Object.values(UI.inputs).forEach(
+    (el) => el.addEventListener("change", handleManualInput),
+);
+Object.values(UI.select).forEach(
+    (el) => el.addEventListener("change", handleManualInput),
+);
 
 // Body toggle listeners - recalculate immediately on change
 for (const name of BODY_NAMES) {
