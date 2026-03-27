@@ -4,11 +4,13 @@
         "build": "vite build",
         "preview": "vite preview",
         "test": "vitest",
-        "deploy": "npm run build && gh-pages -d dist"
+        "deploy": "npm run build && gh-pages -d dist",
+        "format": "prettier --write src/"
     },
     "devDependencies": {
         "@types/node": "^25.5.0",
         "gh-pages": "^6.3.0",
+        "prettier": "^3.8.1",
         "vite": "^8.0.1",
         "vitest": "^4.1.0"
     }
