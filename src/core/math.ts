@@ -18,3 +18,11 @@ export function radToHours(rad: number): number {
 export function hoursToRad(hours: number): number {
     return hours * (PI / 12);
 }
+
+export function normalizeDeg(angle: number): number {
+    return ((angle % 360) + 360) % 360;
+}
+
+export function normalizeRad(angle: number): number {
+    return ((angle % TWO_PI) + TWO_PI) % TWO_PI;
+}
