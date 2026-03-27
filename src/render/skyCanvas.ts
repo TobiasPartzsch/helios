@@ -103,10 +103,22 @@ export function drawGrid(
 
         const label = getCardinalLabel(azDeg);
         if (label) {
-            // Using textAlign: 'center' prevents labels from "drifting" 
-            // to the right of the line.
-            ctx.textAlign = 'center';
-            ctx.fillText(label, x, height - 5);
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.font = "bold 12px Arial";
+            // Background pill for contrast
+            const metrics = ctx.measureText(label);
+            const pad = 0;
+            // Clamp so label never bleeds off either edge
+            const halfLabel = metrics.width / 2
+            const lx = Math.max(halfLabel, Math.min(width - halfLabel, x));
+            const ly = height - 18;
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fillRect(lx - halfLabel - pad, ly - pad, metrics.width + pad * 2, 16);
+            // Label text
+            ctx.fillStyle = "#aaaaaa";
+            ctx.fillText(label, lx, ly);
+            ctx.restore();
         }
     }
 }
