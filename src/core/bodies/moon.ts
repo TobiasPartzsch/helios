@@ -1,23 +1,6 @@
 import type { EquatorialCoords } from "../coordinates";
+import { degToRad, normalizeDeg, normalizeRad, radToDeg } from "../math";
 import { getDaysSinceJ2000, getDaysSinceJ2000_5 } from '../time/julian';
-
-function degToRad(deg: number): number {
-    return (deg * Math.PI) / 180;
-}
-
-function radToDeg(rad: number): number {
-    return (rad * 180) / Math.PI;
-}
-
-function normalizeDeg(angle: number): number {
-    const full = 360;
-    return ((angle % full) + full) % full;
-}
-
-function normalizeRad(angle: number): number {
-    const twoPi = 2 * Math.PI;
-    return ((angle % twoPi) + twoPi) % twoPi;
-}
 
 /**
  * Internal helper: approximate Sun ecliptic longitude (radians)

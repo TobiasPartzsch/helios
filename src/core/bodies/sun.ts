@@ -1,18 +1,5 @@
 import type { EquatorialCoords } from "../coordinates";
-
-function degToRad(deg: number): number {
-    return (deg * Math.PI) / 180;
-}
-
-function normalizeDeg(angle: number): number {
-    const full = 360;
-    return ((angle % full) + full) % full;
-}
-
-function normalizeRad(angle: number): number {
-    const twoPi = 2 * Math.PI;
-    return ((angle % twoPi) + twoPi) % twoPi;
-}
+import { degToRad, normalizeDeg, normalizeRad } from "../math";
 
 /**
  * Compute the Sun's apparent equatorial coordinates (RA/Dec) for a given Julian Date.
