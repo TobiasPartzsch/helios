@@ -85,7 +85,7 @@ command-strip-container {
     flex: 1;
     min-width: 320px;
     background: var(--color-bg-panel);
-    padding: 1.5rem;
+    padding: 0.75rem;
     border-radius: var(--radius-main);
     overflow-y: auto;
     border: 1px solid var(--color-border);
@@ -118,9 +118,24 @@ command-strip-container {
 /* --- Observer & Horizon Controls --- */
 
 #controls h1 {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
+    margin: 0 0 0.5rem 0;
     margin-top: 0;
     color: var(--color-text-main);
+}
+
+#controls h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #666;
+    margin: 0.5rem 0 0.25rem 0;
+}
+
+#controls hr {
+    margin: 0.5rem 0;
+    /* browser default is chunky */
+    border-color: var(--color-border);
 }
 
 .observer-controls,
@@ -129,7 +144,7 @@ command-strip-container {
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem;
 }
 
 .input-group {
@@ -137,12 +152,12 @@ command-strip-container {
     align-items: center;
     gap: 8px;
     background: #252525;
-    padding: 4px 8px;
+    padding: 2px 6px;
     border-radius: 4px;
 }
 
 .input-group input {
-    width: 70px;
+    width: 60px;
     border: 1px solid var(--color-border);
     background: #eee;
     color: #111;
@@ -174,4 +189,14 @@ command-strip-container {
 
 .body-enabled:checked~.body-telemetry {
     display: block;
+}
+
+.body-row {
+    padding: 0.15rem 0;
+    font-size: 0.9rem;
+}
+
+.body-telemetry {
+    font-size: 0.85rem;
+    padding: 0.15rem 0 0.15rem 1.2rem;
 }
