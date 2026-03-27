@@ -100,33 +100,31 @@ This project is a work in progress. The core time and coordinate transforms are 
 - **Dependency Audit**: Evaluated `geo-tz` and `tzlookup` for local timezone detection; both 
   incompatible with browser environment. LMT retained as the astronomically correct alternative.
 
+## Recent Progress
+- **Keplerian Orbital Engine**: Implemented a shared `core/orbit/` module with 
+  Newton-Raphson Kepler equation solver, J2000.0 mean elements for Mercury through 
+  Saturn, and a heliocentric-to-geocentric propagation pipeline.
+- **Planetary Parade**: Wired Mercury, Venus, Mars, Jupiter, and Saturn into the 
+  renderer and telemetry panel using the new orbital engine.
+- **Body Visibility Controls**: Added per-body enable/render toggles. Enabled bodies 
+  show telemetry inline; the render toggle is only revealed when a body is enabled.
+- **Tooltip RA/Dec**: Alt/Az telemetry rows carry RA/Dec as a hover tooltip, exposing 
+  engine internals without cluttering the UI.
+- **Compact Sidebar**: Reduced vertical spacing to fit full telemetry including all 
+  planets on a 1080p display.
+- **Direction Labels**: Added edge clamping to prevent clipping.
+
 ## Next Steps by priority
-- **Rework model**: Base the calculations more clearly on orbit and spin. (Keppler Elements)
-- **The Planetary Parade**: Incorporate Mercury, Venus, Mars, Jupiter, and Saturn using their respective orbital elements.
+- **Precision Upgrade**: Add Meeus Table 31.b correction terms to improve planetary 
+  positions beyond the current ~5° accuracy for outer planets.
+- **Planet Tracks**: Extend `drawBodyTrack` to support planets via a name-based 
+  wrapper around `planetEquatorialCoordinates`.
 - **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.
 - **Voyage Mode**: Import a JSON (later CSV, GPX) waypoint list and animate observer position over time,
   interpolating along great circle routes. Demonstrates why globe geometry produces 
   "curved" flight paths and shows the sky shifting continuously across hemispheres.
-- **Direction Label Rendering**: Currently the away direction isn't very well readable. Easy win whenever we have a little time left
 - **Zoom**: Horizon line is very difficult to see at many locations so being able to zoom in would make sense.
 - **Sky Color**: Change the sky depending on time representing illumination from the sun and moon. Probably not worth it.
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
-
-
-## Comments from Boots for next session:
-The “Clean” Architecture for Helios:
-The Model (core/): This should be "Headless." It takes a JulianDate and returns coordinates. It shouldn't know that a browser or a canvas even exists. This makes your Keplerian math testable with vitest.
-The View (render/): These are your "Painters." They take coordinates and a CanvasContext and draw shapes. They don't care how the Sun's position was calculated; they just care where it goes on the screen.
-The Controller (main.ts): This becomes the "Orchestrator." Its only job is to:
-Listen for UI events (Inputs/Buttons).
-Run the requestAnimationFrame loop.
-Pass data from the Model to the View.
-How to refactor tomorrow:
-I suggest creating a SkyRenderer class or a set of functions in src/render/ that encapsulates all the ctx calls.
-
-3. Suggested Commit Strategy for the Refactor
-If you choose to clean up the CSS and the Main logic tomorrow, I will remind you to keep them atomic:
-
-Commit 1 (Style): refactor: modularize CSS into reusable utility classes
-Commit 2 (Model): refactor: extract celestial math to core/orbit.ts (The "Logic")
-Commit 3 (View): refactor: move canvas drawing to render/skyRenderer.ts (The "Paint")
+- **Lunar Detail Tooltip**: Convert the moon face canvas to a hover overlay to 
+  reclaim sidebar space on smaller screens. Somewhat quick win to be used as a filler.
