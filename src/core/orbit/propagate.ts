@@ -1,8 +1,8 @@
 import type { EquatorialCoords } from "../coordinates";
 import { degToRad, normalizeRad } from "../math";
 import { J2000_EPOCH, JULIAN_CENTURY } from "../time/julian";
-import { OrbitalElements, OrbitalRates, PLANETS } from "./elements";
 import { trueAnomaly } from "./kepler";
+import { OrbitalElements, OrbitalRates, PLANETS } from "./keplerElements";
 
 /**
  * Interpolate orbital elements to a given Julian Date.
