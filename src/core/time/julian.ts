@@ -2,6 +2,7 @@
  * Standard J2000.0 Epoch (January 1, 2000, 12:00 UTC)
  */
 export const J2000_EPOCH = 2451545.0;
+export const JULIAN_CENTURY = 36525.0;
 
 /**
  * Alternative J2000.5 Epoch (January 1.5, 2000) 
