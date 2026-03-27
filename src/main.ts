@@ -1,16 +1,18 @@
-import { moonEquatorialCoordinates, moonPhase } from './core/bodies/moon';
-import { sunEquatorialCoordinates } from './core/bodies/sun';
-import { equatorialToHorizontal } from './core/coordinates';
-import { HorizonProfile } from './core/horizon';
-import { degToRad, radToDeg, radToHours } from './core/math';
-import { formatEoT, formatHours } from './core/time/format';
-import { dateToJulianDate } from './core/time/julian';
-import { localSiderealTimeHours } from './core/time/sidereal';
-import { MoonFaceRenderer } from './render/moonFaceRenderer';
-import { SkyRenderer } from './render/skyRenderer';
-import './style.css';
-import { getObserverState, UI } from './ui/elements';
-import { initHorizonFetch } from './ui/horizonController';
+import { moonEquatorialCoordinates, moonPhase } from "./core/bodies/moon";
+import { sunEquatorialCoordinates } from "./core/bodies/sun";
+import type { EquatorialCoords, HorizontalCoords } from "./core/coordinates";
+import { equatorialToHorizontal } from "./core/coordinates";
+import { HorizonProfile } from "./core/horizon";
+import { degToRad, radToDeg, radToHours } from "./core/math";
+import { planetEquatorialCoordinates } from "./core/orbit/propagate";
+import { formatEoT, formatHours } from "./core/time/format";
+import { dateToJulianDate } from "./core/time/julian";
+import { localSiderealTimeHours } from "./core/time/sidereal";
+import { MoonFaceRenderer } from "./render/moonFaceRenderer";
+import { SkyRenderer } from "./render/skyRenderer";
+import "./style.css";
+import { BODY_NAMES, BodyName, getObserverState, syncUiFromDate, UI } from "./ui/elements";
+import { initHorizonFetch } from "./ui/horizonController";
 
 // Renderers
 const skyRenderer = new SkyRenderer(UI.canvas.main);
@@ -20,127 +22,134 @@ const moonFaceRenderer = new MoonFaceRenderer(UI.canvas.moonFace);
 let currentHorizonProfile: HorizonProfile | null = null;
 let isPlaying = false;
 let lastTimestamp = 0;
-let simTime = new Date(Date.UTC(
-    parseInt(UI.inputs.year.value),
-    parseInt(UI.inputs.month.value) - 1,
-    parseInt(UI.inputs.day.value),
-    ...UI.inputs.clockTime.value.split(':').map(Number)
-)).getTime();
+let simTime = new Date(
+    Date.UTC(
+        parseInt(UI.inputs.year.value),
+        parseInt(UI.inputs.month.value) - 1,
+        parseInt(UI.inputs.day.value),
+        ...UI.inputs.clockTime.value.split(":").map(Number),
+    ),
+).getTime();
+
+// Planet names handled by the Kepler engine (excludes sun and moon)
+const PLANET_NAMES = BODY_NAMES.filter((n) => n !== "sun" && n !== "moon");
+
+function formatAltAz(horiz: HorizontalCoords): string {
+    return `Alt: ${radToDeg(horiz.altitudeRad).toFixed(2)}°, Az: ${radToDeg(horiz.azimuthRad).toFixed(2)}°`;
+}
+
+function formatRaDec(eq: EquatorialCoords): string {
+    return `RA: ${radToHours(eq.rightAscensionRad).toFixed(3)}h, Dec: ${radToDeg(eq.declinationRad).toFixed(2)}°`;
+}
 
 function update(providedJd?: number) {
     const { outputs } = UI;
     const state = getObserverState();
     const jd = providedJd ?? dateToJulianDate(state.date);
     const latRad = degToRad(state.latDeg);
-
-    // Celestial positions
-    const sunEq = sunEquatorialCoordinates(jd);
     const lstHours = localSiderealTimeHours(jd, state.lonDeg);
     const lstRad = degToRad(lstHours * 15);
-    const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
-    const moonEq = moonEquatorialCoordinates(jd);
-    const moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad, state.refractionModel);
-    const phaseInfo = moonPhase(jd);
 
     // Telemetry
-    const utcHours = state.date.getUTCHours()
-        + state.date.getUTCMinutes() / 60
-        + state.date.getUTCSeconds() / 3600;
-    let lmtHours = ((utcHours + state.lonDeg / 15.0) % 24 + 24) % 24;
-    const sunRAHours = radToHours(sunEq.rightAscensionRad);
-    const eotHours = (lmtHours - 12) - (lstHours - sunRAHours);
+    const utcHours =
+        state.date.getUTCHours() +
+        state.date.getUTCMinutes() / 60 +
+        state.date.getUTCSeconds() / 3600;
+    const lmtHours = ((utcHours + state.lonDeg / 15.0) % 24 + 24) % 24;
 
-    // UI outputs
+    // Sun
+    let sunHoriz = null;
+    if (state.bodies.sun.enabled) {
+        const sunEq = sunEquatorialCoordinates(jd);
+        sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
+        const eotHours = lmtHours - 12 - (lstHours - radToHours(sunEq.rightAscensionRad));
+        outputs.sun.innerText = formatAltAz(sunHoriz);
+        outputs.sun.title = formatRaDec(sunEq);
+        outputs.eot.innerText = formatEoT(eotHours);
+    }
+
+    // Moon
+    let moonHoriz = null;
+    if (state.bodies.moon.enabled) {
+        const moonEq = moonEquatorialCoordinates(jd);
+        moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad, state.refractionModel);
+        const phaseInfo = moonPhase(jd);
+        outputs.moon.innerText = formatAltAz(moonHoriz);
+        outputs.moon.title = formatRaDec(moonEq);
+        outputs.phase.innerText = `${phaseInfo.phaseName} (${(phaseInfo.illuminatedFraction * 100).toFixed(1)}%)`;
+        moonFaceRenderer.render({
+            illuminatedFraction: phaseInfo.illuminatedFraction,
+            sunHoriz: sunHoriz ?? { altitudeRad: 0, azimuthRad: 0 },
+            moonHoriz,
+        });
+    }
+
+    // Planets
+    const planetHorizMap: Partial<Record<BodyName, HorizontalCoords>> = {};
+    for (const name of PLANET_NAMES) {
+        if (state.bodies[name].enabled) {
+            const eq = planetEquatorialCoordinates(name, jd);
+            const horiz = equatorialToHorizontal(eq, latRad, lstRad, state.refractionModel);
+            planetHorizMap[name] = horiz;
+            const out = outputs[name as keyof typeof outputs] as HTMLElement;
+            out.innerText = formatAltAz(horiz);
+            out.title = formatRaDec(eq);
+        }
+    }
+
+    // Time telemetry
     outputs.lst.innerText = formatHours(lstHours);
     outputs.lmt.innerText = formatHours(lmtHours);
-    outputs.eot.innerText = formatEoT(eotHours);
     outputs.jd.innerText = jd.toFixed(5);
-    outputs.sun.innerText = `Alt: ${radToDeg(sunHoriz.altitudeRad).toFixed(2)}°, Az: ${radToDeg(sunHoriz.azimuthRad).toFixed(2)}°`;
-    outputs.moon.innerText = `Alt: ${radToDeg(moonHoriz.altitudeRad).toFixed(2)}°, Az: ${radToDeg(moonHoriz.azimuthRad).toFixed(2)}°`;
-    outputs.phase.innerText = `${phaseInfo.phaseName} (${(phaseInfo.illuminatedFraction * 100).toFixed(1)}%)`;
 
     // Render
     skyRenderer.render({
         jd,
         latRad,
         lonDeg: state.lonDeg,
-        sunHoriz,
-        moonHoriz,
+        sunHoriz: sunHoriz ?? undefined,
+        moonHoriz: moonHoriz ?? undefined,
+        planetHorizMap,
+        bodies: state.bodies,
         horizonProfile: currentHorizonProfile,
         refractionModel: state.refractionModel,
     });
-
-    moonFaceRenderer.render({
-        illuminatedFraction: phaseInfo.illuminatedFraction,
-        sunHoriz,
-        moonHoriz,
-    });
-}
-
-function syncUiFromDate(date: Date) {
-    UI.inputs.year.value = date.getUTCFullYear().toString();
-    UI.inputs.month.value = (date.getUTCMonth() + 1).toString();
-    UI.inputs.day.value = date.getUTCDate().toString();
-
-    const hh = String(date.getUTCHours()).padStart(2, '0');
-    const mm = String(date.getUTCMinutes()).padStart(2, '0');
-    const ss = String(date.getUTCSeconds()).padStart(2, '0');
-    UI.inputs.clockTime.value = `${hh}:${mm}:${ss}`;
 }
 
 function animate(timestamp: number) {
     if (isPlaying) {
         const dt = timestamp - lastTimestamp;
-        const unit = parseFloat((UI.select.timeUnit).value);
-        const multiplier = parseFloat((UI.inputs.simSpeed).value);
-
+        const unit = parseFloat(UI.select.timeUnit.value);
+        const multiplier = parseFloat(UI.inputs.simSpeed.value);
         UI.slider.speedVal.innerText = multiplier.toString();
-
-        // Total speed = Unit * Multiplier (in ms per real ms)
-        const totalSpeedFactor = unit * multiplier;
-
-        // Apply our speed factor.
-        simTime += dt * totalSpeedFactor;
-
+        simTime += dt * unit * multiplier;
         const date = new Date(simTime);
-        const jd = dateToJulianDate(date);
-
-        // Update the UI purely for the human's benefit
         syncUiFromDate(date);
-
-        // Pass the precise JD into the engine
-        update(jd);
+        update(dateToJulianDate(date));
     }
-
     lastTimestamp = timestamp;
     requestAnimationFrame(animate);
 }
 
-
-// Start the loop (it will just wait if isPlaying is false)
+// Start loop
 requestAnimationFrame(animate);
 
-// 1. Initialize UI values to UTC Now
+// Initialize to UTC now
 const now = new Date();
-UI.inputs.year.value = now.getUTCFullYear().toString();
-UI.inputs.month.value = (now.getUTCMonth() + 1).toString();
-UI.inputs.day.value = now.getUTCDate().toString();
-UI.inputs.clockTime.value = `${String(now.getUTCHours()).padStart(2, '0')}:${String(now.getUTCMinutes()).padStart(2, '0')}:${String(now.getUTCSeconds()).padStart(2, '0')}`;
-
-// 2. Set the Master State (simTime)
+syncUiFromDate(now);
 simTime = now.getTime();
-
-// 3. Initial Render
 update(dateToJulianDate(now));
 
-// 4. Wire up listeners to handle the "State Update"
+// Manual input handler
 const handleManualInput = () => {
-    const d = new Date(Date.UTC(
-        parseInt(UI.inputs.year.value),
-        parseInt(UI.inputs.month.value) - 1,
-        parseInt(UI.inputs.day.value),
-        ...UI.inputs.clockTime.value.split(':').map(Number)
-    ));
+    const d = new Date(
+        Date.UTC(
+            parseInt(UI.inputs.year.value),
+            parseInt(UI.inputs.month.value) - 1,
+            parseInt(UI.inputs.day.value),
+            ...UI.inputs.clockTime.value.split(":").map(Number),
+        ),
+    );
     simTime = d.getTime();
     update(dateToJulianDate(d));
 };
@@ -151,10 +160,15 @@ initHorizonFetch((profile) => {
 });
 
 // Listeners
-UI.buttons.play.onclick = () => isPlaying = true;
-UI.buttons.pause.onclick = () => isPlaying = false;
-UI.inputs.simSpeed.addEventListener('input', (e) => {
-    const val = (e.target as HTMLInputElement).value;
-    UI.slider.speedVal!.innerText = val;
+UI.buttons.play.onclick = () => (isPlaying = true);
+UI.buttons.pause.onclick = () => (isPlaying = false);
+UI.inputs.simSpeed.addEventListener("input", (e) => {
+    UI.slider.speedVal.innerText = (e.target as HTMLInputElement).value;
 });
-UI.select.refraction.addEventListener('change', handleManualInput);
+UI.select.refraction.addEventListener("change", handleManualInput);
+
+// Body toggle listeners - recalculate immediately on change
+for (const name of BODY_NAMES) {
+    UI.bodies[name].enabled.addEventListener("change", handleManualInput);
+    UI.bodies[name].visible.addEventListener("change", () => update());
+}
