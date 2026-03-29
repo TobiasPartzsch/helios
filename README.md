@@ -128,3 +128,12 @@ This project is a work in progress. The core time and coordinate transforms are 
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
 - **Lunar Detail Tooltip**: Convert the moon face canvas to a hover overlay to 
   reclaim sidebar space on smaller screens. Somewhat quick win to be used as a filler.
+- **Astronimic Symbols option**: Alternatively to circles, render bodies as their astronomical symbols.
+- **Position on different bodies**: Instead of only earth, allow the option to render the sky on any body that is simulated.
+
+
+The n-body gravity simulation is a natural next step and arguably more honest - you're integrating the actual physics rather than fitting to precomputed elements. The tradeoff is numerical stability; a naive Euler integrator will bleed energy over time and your orbits will drift. Runge-Kutta 4 is the usual step up, and for long-term stability something symplectic like Leapfrog/Störmer-Verlet preserves energy much better.
+
+The satisfying part: you'd only need initial positions and velocities for the major bodies, and gravity does the rest. No tables.
+
+JPL's Horizons system provides high-precision initial state vectors if you need them.
