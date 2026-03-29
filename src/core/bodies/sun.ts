@@ -1,12 +1,13 @@
 import type { EquatorialCoords } from "../coordinates";
 import { degToRad, normalizeDeg, normalizeRad } from "../math";
+import { getDaysSinceJ2000 } from "../time/julian";
 
 /**
  * Compute the Sun's apparent equatorial coordinates (RA/Dec) for a given Julian Date.
  * Low-precision but adequate for visualization.
  */
 export function sunEquatorialCoordinates(jd: number): EquatorialCoords {
-    const n = jd - 2451545.0; // days since J2000.0
+    const n = getDaysSinceJ2000(jd);
 
     // Mean longitude L (deg)
     let L = 280.460 + 0.9856474 * n;
