@@ -1,69 +1,29 @@
+// propagate.ts
 import type { EquatorialCoords } from "../coordinates";
-import { degToRad, normalizeRad } from "../math";
+import { degToRad, normalizeRad, radToDeg } from "../math";
 import { J2000_EPOCH, JULIAN_CENTURY } from "../time/julian";
-import { trueAnomaly } from "./kepler";
-import { OrbitalElements, OrbitalRates, PLANETS } from "./keplerElements";
+import { vsop87 } from "./vsop87";
 
-/**
- * Interpolate orbital elements to a given Julian Date.
- */
-function elementsAtJD(jd: number, record: { epoch: OrbitalElements; rates: OrbitalRates }): OrbitalElements {
-    const T = (jd - J2000_EPOCH) / JULIAN_CENTURY;
-    const { epoch: e0, rates: r } = record;
-    return {
-        a: e0.a + r.a * T,
-        e: e0.e + r.e * T,
-        i: e0.i + r.i * T,
-        omega: e0.omega + r.omega * T,
-        w: e0.w + r.w * T,
-        L: e0.L + r.L * T,
-    };
+function sphericalToCartesian(L: number, B: number, R: number): [number, number, number] {
+    const cosB = Math.cos(B);
+    return [
+        R * cosB * Math.cos(L),
+        R * cosB * Math.sin(L),
+        R * Math.sin(B),
+    ];
 }
 
-/**
- * Heliocentric ecliptic XYZ (AU) from orbital elements.
- */
-export function heliocentricEcliptic(el: OrbitalElements): [number, number, number] {
-    const M = el.L - el.w;
-    const nu = trueAnomaly(M, el.e);
-
-    // Distance from Sun
-    const r = el.a * (1 - el.e * el.e) / (1 + el.e * Math.cos(nu));
-
-    // ω = ϖ - Ω
-    const argPerihelion = el.w - el.omega;
-    const u = nu + argPerihelion;
-
-    const cosO = Math.cos(el.omega);
-    const sinO = Math.sin(el.omega);
-    const cosU = Math.cos(u);
-    const sinU = Math.sin(u);
-    const cosI = Math.cos(el.i);
-
-    const x = r * (cosO * cosU - sinO * sinU * cosI);
-    const y = r * (sinO * cosU + cosO * sinU * cosI);
-    const z = r * sinU * Math.sin(el.i);
-
-    return [x, y, z];
-}
-
-/**
- * Convert heliocentric ecliptic XYZ to geocentric equatorial RA/Dec.
- */
 function eclipticToEquatorial(
     x: number, y: number, z: number,
     earthX: number, earthY: number, earthZ: number,
     jd: number
 ): EquatorialCoords {
-    // Geocentric position
     const dx = x - earthX;
     const dy = y - earthY;
     const dz = z - earthZ;
 
-    // Obliquity of the ecliptic
     const T = (jd - J2000_EPOCH) / JULIAN_CENTURY;
     const eps = degToRad(23.439291111 - 0.013004167 * T);
-
     const cosEps = Math.cos(eps);
     const sinEps = Math.sin(eps);
 
@@ -71,24 +31,33 @@ function eclipticToEquatorial(
     const eqY = dy * cosEps - dz * sinEps;
     const eqZ = dy * sinEps + dz * cosEps;
 
-    const rightAscensionRad = normalizeRad(Math.atan2(eqY, eqX));
-    const declinationRad = Math.atan2(eqZ, Math.sqrt(eqX * eqX + eqY * eqY));
-
-    return { rightAscensionRad, declinationRad };
+    return {
+        rightAscensionRad: normalizeRad(Math.atan2(eqY, eqX)),
+        declinationRad: Math.atan2(eqZ, Math.sqrt(eqX * eqX + eqY * eqY)),
+    };
 }
 
-/**
- * Compute geocentric equatorial coordinates for a named planet.
- */
 export function planetEquatorialCoordinates(name: string, jd: number): EquatorialCoords {
-    const record = PLANETS[name];
-    if (!record) throw new Error(`Unknown planet: ${name}`);
+    const [L, B, R] = vsop87(name, jd);
+    const [x, y, z] = sphericalToCartesian(L, B, R);
+    const [eL, eB, eR] = vsop87("earth", jd);
+    const [ex, ey, ez] = sphericalToCartesian(eL, eB, eR);
 
-    const el = elementsAtJD(jd, record);
-    const earthEl = elementsAtJD(jd, PLANETS.earth);
+    // if (name === "jupiter") {
+    //     console.log(`helio xyz: ${x.toFixed(4)}, ${y.toFixed(4)}, ${z.toFixed(4)}`);
+    //     console.log(`earth xyz: ${ex.toFixed(4)}, ${ey.toFixed(4)}, ${ez.toFixed(4)}`);
+    //     console.log(`geo   xyz: ${(x - ex).toFixed(4)}, ${(y - ey).toFixed(4)}, ${(z - ez).toFixed(4)}`);
+    // }
 
-    const [x, y, z] = heliocentricEcliptic(el);
-    const [ex, ey, ez] = heliocentricEcliptic(earthEl);
+    // if (name === "mars" || name === "jupiter") {
+    //     const result = eclipticToEquatorial(x, y, z, ex, ey, ez, jd);
+    //     console.log(`${name} RA=${radToDeg(result.rightAscensionRad).toFixed(4)}° Dec=${radToDeg(result.declinationRad).toFixed(4)}°`);
+    //     console.log(`mars geo ecliptic: dx=${(x - ex).toFixed(4)} dy=${(y - ey).toFixed(4)} dz=${(z - ez).toFixed(4)}`);
+    //     console.log(`mars L=${radToDeg(L).toFixed(4)}° earth L=${radToDeg(eL).toFixed(4)}°`);
+    // }
+    const coords = eclipticToEquatorial(x, y, z, ex, ey, ez, jd);
+
+    console.log(`${name.padEnd(8)} RA=${radToDeg(coords.rightAscensionRad).toFixed(4)}° Dec=${radToDeg(coords.declinationRad).toFixed(4)}°`);
 
     return eclipticToEquatorial(x, y, z, ex, ey, ez, jd);
 }

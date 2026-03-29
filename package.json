@@ -5,12 +5,15 @@
         "preview": "vite preview",
         "test": "vitest",
         "deploy": "npm run build && gh-pages -d dist",
-        "format": "prettier --write src/"
+        "format": "prettier --write src/",
+        "generate:vsop87": "tsx scripts/parseVsop87.ts"
     },
     "devDependencies": {
         "@types/node": "^25.5.0",
         "gh-pages": "^6.3.0",
         "prettier": "^3.8.1",
+        "ts-node": "^10.9.2",
+        "tsx": "^4.21.0",
         "vite": "^8.0.1",
         "vitest": "^4.1.0"
     }
