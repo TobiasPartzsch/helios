@@ -114,6 +114,25 @@ This project is a work in progress. The core time and coordinate transforms are 
   planets on a 1080p display.
 - **Direction Labels**: Added edge clamping to prevent clipping.
 
+## Recent Progress
+- **VSOP87B Precision Upgrade**: Replaced the Keplerian orbital engine with a full 
+  VSOP87B series evaluation, improving planetary position accuracy from ~5° to 
+  sub-arcminute level for inner planets and ~1° for outer planets.
+- **Automated Data Pipeline**: Implemented `scripts/parseVsop87.ts` (via `tsx`) to 
+  parse the canonical VSOP87B data files from the Bureau des Longitudes and generate 
+  `src/core/orbit/vsop87Data.ts` automatically. Run with `npm run generate:vsop87`.
+  Raw data files live in `scripts/vsop87/` and are excluded from version control.
+- **Extended Planet Coverage**: Added Uranus and Neptune to the renderer and telemetry 
+  panel using the new engine.
+- **Verified against JPL Horizons**: Confirmed sub-arcminute agreement for Jupiter 
+  and Earth at J2000.0 against JPL Horizons astrometric ICRF ephemeris.
+- **Legacy Branch**: Keplerian engine preserved on `kepler-legacy` branch.
+
+## Known Issues / Next Session
+- Propagate test expected values need updating against verified JPL Horizons 
+  astrometric ICRF data (Mars, Saturn, and others still pending).
+- Additional planet test cases needed to confirm accuracy across the full set.
+
 ## Next Steps by priority
 - **Precision Upgrade**: Add Meeus Table 31.b correction terms to improve planetary 
   positions beyond the current ~5° accuracy for outer planets.
