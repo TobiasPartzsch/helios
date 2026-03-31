@@ -20,13 +20,5 @@ export function vsop87(name: string, jd: number): [number, number, number] {
     const B = evaluateSeries(data.B, tau);
     const R = evaluateSeries(data.R, tau);
 
-    if (name === "jupiter") {
-        console.log(`jupiter R0[0]: ${JSON.stringify(data.R[0]?.[0])}`);
-        console.log(`jupiter R0 length: ${data.R[0]?.length}`);
-        data.L[0].slice(0, 5).forEach(([A, B, C], i) => {
-            console.log(`L0[${i}]: A=${A.toFixed(8)} B=${B.toFixed(8)} contrib=${(A * Math.cos(B + C * 0)).toFixed(6)}`);
-        });
-        console.log(`L raw=${evaluateSeries(data.L, tau).toFixed(6)} rad`);
-    }
     return [L, B, R];
 }
