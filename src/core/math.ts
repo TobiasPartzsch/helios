@@ -26,3 +26,16 @@ export function normalizeDeg(angle: number): number {
 export function normalizeRad(angle: number): number {
     return ((angle % TWO_PI) + TWO_PI) % TWO_PI;
 }
+
+export function hmsToDeg(hours: number, minutes: number, seconds: number): number {
+    return (hours + minutes / 60 + seconds / 3600) * 15;
+}
+
+export function dmsToDeg(sign: 1 | -1, degrees: number, minutes: number, seconds: number): number {
+    return sign * (degrees + minutes / 60 + seconds / 3600);
+}
+
+export function angularDifferenceDeg(a: number, b: number): number {
+    const diff = ((a - b + 180) % 360 + 360) % 360 - 180;
+    return Math.abs(diff);
+}

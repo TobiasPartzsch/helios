@@ -1,10 +1,6 @@
+import { normalizeRad } from "../math";
 import type { EquatorialCoords, HorizontalCoords } from "./index";
 import { applyRefraction, RefractionModel } from "./refraction";
-
-function normalizeAngleRad(angle: number): number {
-    const twoPi = 2 * Math.PI;
-    return ((angle % twoPi) + twoPi) % twoPi;
-}
 
 /**
  * Convert equatorial coordinates (RA/Dec) to horizontal coordinates (Az/Alt)
@@ -22,7 +18,7 @@ export function equatorialToHorizontal(
 ): HorizontalCoords {
     const { rightAscensionRad: ra, declinationRad: dec } = eq;
 
-    let H = localSiderealTimeRad - ra;
+    const H = localSiderealTimeRad - ra;
     // (Normalization is good, but Math.sin/cos handle any value)
 
     const sinDec = Math.sin(dec);
@@ -32,7 +28,7 @@ export function equatorialToHorizontal(
     const cosH = Math.cos(H);
     const sinH = Math.sin(H);
 
-    // Altitude - This part was actually fine!
+    // Altitude
     const sinAlt = sinDec * sinLat + cosDec * cosLat * cosH;
     const altitudeRad = Math.asin(sinAlt);
 
@@ -45,8 +41,8 @@ export function equatorialToHorizontal(
 
     let azimuthRad = Math.atan2(y, x);
 
-    // Normalize to [0, 2PI]
-    azimuthRad = ((azimuthRad % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    // Normalize to [0, 2π)
+    azimuthRad = normalizeRad(azimuthRad);
 
     return {
         azimuthRad,

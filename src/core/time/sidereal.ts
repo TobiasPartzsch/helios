@@ -1,4 +1,3 @@
-// src/core/time/sidereal.ts
 export function julianDateToGMSTHours(jd: number): number {
     const jd0 = Math.floor(jd + 0.5) - 0.5;
     const H = (jd - jd0) * 24;
