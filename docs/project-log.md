@@ -87,3 +87,10 @@
 - added initial table-driven reference tests for planets
 - calibrated Mars against Horizons
 - cleaned stale Jupiter/Mars expectations
+
+## Recent Progress
+- added a Horizons fetch script for geocentric ICRF planetary RA/Dec reference data
+- generated table-driven reference cases for Mercury through Neptune
+- moved planetary reference cases into a dedicated fixture file
+- updated propagate.test.ts to consume shared fixture data
+- verified test suite passes with the expanded planetary reference set

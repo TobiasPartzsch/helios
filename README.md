@@ -64,23 +64,11 @@ for comparison and rollback, but are no longer the primary engine.
 
 ## Validation Status
 
-Reference checks are being performed against JPL Horizons / NASA sources.
-
-Validated so far:
-
-- Earth, Jupiter, and Mars at J2000.0 agree closely with JPL Horizons geocentric ICRF output
-- Core solar/lunar events have been checked against known 2024 dates
-- Invariant tests now cover core math, time, coordinate, refraction, and orbit helper transformations
-
-Pending:
-
-- Expand planetary reference coverage across the remaining bodies
-- Broaden test coverage across multiple epochs
-- Formalize acceptable error tolerances by body and model
-- Automate ingestion of JPL Horizons reference data for regression fixtures
+Core solar/lunar events have been checked manually against known 2024 dates
+Planetary regression fixtures now include JPL Horizons geocentric ICRF reference cases across multiple epochs.
+Invariant tests now cover core math, time, coordinate, refraction, and orbit helper transformations
 
 ## Next Steps by priority
-- **Validation Expansion**: Extend JPL Horizons-backed reference tests across the remaining planets and across multiple epochs.
 - **Planet Tracks**: Extend `drawBodyTrack` to support planets via a name-based 
   wrapper around `planetEquatorialCoordinates`.
 - **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.
