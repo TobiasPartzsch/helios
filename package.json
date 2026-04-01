@@ -6,7 +6,8 @@
         "test": "vitest",
         "deploy": "npm run build && gh-pages -d dist",
         "format": "prettier --write src/",
-        "generate:vsop87": "tsx scripts/parseVsop87.ts"
+        "generate:vsop87": "tsx scripts/parseVsop87.ts",
+        "generate:horizons": "tsx scripts/fetch-horizons-reference.ts"
     },
     "devDependencies": {
         "@types/node": "^25.5.0",

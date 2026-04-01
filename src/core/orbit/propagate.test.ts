@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { angularDifferenceDeg, degToRad, dmsToDeg, hmsToDeg, radToDeg } from "../math";
+import { angularDifferenceDeg, degToRad, radToDeg } from "../math";
 import { J2000_EPOCH } from "../time";
+import { planetEquatorialReferenceCases } from "./fixtures/planet-equatorial-reference";
 import { eclipticCartesianToEquatorial, MEAN_OBLIQUITY_J2000_DEG, planetEquatorialCoordinates, sphericalToCartesian, subtractCartesian } from "./propagate";
 
 describe("planetEquatorialCoordinates", () => {
@@ -8,30 +9,11 @@ describe("planetEquatorialCoordinates", () => {
         expect(() => planetEquatorialCoordinates("pluto", J2000_EPOCH))
             .toThrow("Unknown planet: pluto");
     });
-    const referenceCases = [
-        {
-            name: "jupiter",
-            label: "J2000.0",
-            jd: J2000_EPOCH,
-            expectedRaDeg: 23.8723,
-            expectedDecDeg: 8.5969,
-            toleranceDeg: 0.1,
-            source: "JPL Horizons geocentric ICRF",
-        },
-        {
-            name: "mars",
-            label: "J2000.0",
-            jd: J2000_EPOCH,
-            expectedRaDeg: hmsToDeg(22, 2, 5.9),
-            expectedDecDeg: dmsToDeg(-1, 13, 10, 49.8),
-            toleranceDeg: 0.1,
-            source: "JPL Horizons geocentric ICRF",
-        },
-    ];
+    const referenceCases = planetEquatorialReferenceCases;
 
     for (const testCase of referenceCases) {
-        it(`${testCase.name} at JD ${testCase.label} matches ${testCase.source}`, () => {
-            const coords = planetEquatorialCoordinates(testCase.name, testCase.jd);
+        it(`${testCase.bodyName} at JD ${testCase.label} matches ${testCase.source}`, () => {
+            const coords = planetEquatorialCoordinates(testCase.bodyName, testCase.jd);
             const raDeg = radToDeg(coords.rightAscensionRad);
             const decDeg = radToDeg(coords.declinationRad);
 
