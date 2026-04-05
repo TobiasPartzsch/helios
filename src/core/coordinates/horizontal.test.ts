@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { degToRad } from "../math";
 import { equatorialToHorizontal } from "./horizontal";
 import type { EquatorialCoords } from "./index";
-
-const degToRad = (d: number) => (d * Math.PI) / 180;
 
 describe("coordinates: equatorialToHorizontal", () => {
     it("puts object on meridian at given RA", () => {

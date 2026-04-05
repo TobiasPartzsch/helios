@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { sunEquatorialCoordinates } from "./sun";
 
-const degToRad = (d: number) => (d * Math.PI) / 180;
-
 describe("sun Equatorial coordinates", () => {
     it("has near-zero declination around March equinox 2000", () => {
         // JD ~ 2451623.5 is 2000-03-20 00:00 UT (approx)
