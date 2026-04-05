@@ -45,8 +45,7 @@ export function getEquirectangularXY(
     const x = (shiftedAz / (TWO_PI) + 0.5) * width;
 
     // Y-axis: Altitude PI/2 (top) to -PI/2 (bottom)
-    const normalizedAlt = (altitudeRad + HALF_PI) / PI;
-    const y = height * (1 - normalizedAlt);
+    const y = altToY(altitudeRad, height);
 
     return { x, y };
 }
@@ -80,8 +79,7 @@ export function drawGrid(
     // Every 30 degrees from -90 to 90
     for (let altDeg = -90; altDeg <= 90; altDeg += 30) {
         const altRad = degToRad(altDeg);
-        // We can reuse the Y logic from our mapping
-        const y = height * (1 - (altRad + HALF_PI) / PI);
+        const y = altToY(altRad, height);
 
         ctx.beginPath();
         ctx.moveTo(0, y);
@@ -289,4 +287,8 @@ export function drawHorizon(
 
     ctx.stroke();
     ctx.restore();
+}
+
+function altToY(altRad: number, height: number): number {
+    return height * (1 - (altRad + HALF_PI) / PI);
 }
