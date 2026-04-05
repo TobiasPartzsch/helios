@@ -88,7 +88,7 @@ export class SkyRenderer {
         }
 
         // Tracks
-        if (bodies.sun.enabled) {
+        if (bodies.sun.enabled && bodies.sun.visible) {
             if (!this.trackCache.has("sun")) {
                 this.trackCache.set("sun", buildBodyTrackPath(
                     jd, latRad, lonDeg, dims, isSouthern,
@@ -98,7 +98,7 @@ export class SkyRenderer {
             strokeBodyTrack(ctx, this.trackCache.get("sun")!, BODY_TRACKS.sun!.color);
         }
 
-        if (bodies.moon.enabled) {
+        if (bodies.moon.enabled && bodies.moon.visible) {
             if (!this.trackCache.has("moon")) {
                 this.trackCache.set("moon", buildBodyTrackPath(
                     jd, latRad, lonDeg, dims, isSouthern,
