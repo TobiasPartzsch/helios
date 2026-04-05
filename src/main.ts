@@ -113,6 +113,7 @@ function update(providedJd?: number) {
         bodies: state.bodies,
         horizonProfile: currentHorizonProfile,
         refractionModel: state.refractionModel,
+        useSymbols: state.useSymbols,
     });
 }
 

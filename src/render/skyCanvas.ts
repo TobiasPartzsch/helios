@@ -14,6 +14,7 @@ export interface TrackConfig {
     sampleIntervalDays: number;
     color: string;
     size: number;
+    symbol: string;
 }
 
 /**
@@ -61,6 +62,22 @@ export function drawBody(
     ctx.arc(x, y, radius, 0, TWO_PI);
     ctx.fillStyle = color;
     ctx.fill();
+}
+
+export function drawBodySymbol(
+    ctx: CanvasRenderingContext2D,
+    x: number, y: number,
+    size: number,
+    color: string,
+    symbol?: string,
+): void {
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.font = `${size * 6}px serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(symbol ?? "?", x, y);
+    ctx.restore();
 }
 
 export function drawGrid(

@@ -7,6 +7,7 @@ import { BodyConfig, BodyName } from "../ui/elements";
 import {
     buildBodyTrackPath,
     drawBody,
+    drawBodySymbol,
     drawGrid,
     drawHorizon,
     getEquirectangularXY,
@@ -15,16 +16,18 @@ import {
 } from "./skyCanvas";
 
 const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
-    sun: { windowDays: 1.0, sampleIntervalDays: 1 / 144, color: "#ffa500", size: 10 },  // 10-minute steps
-    moon: { windowDays: 1.05, sampleIntervalDays: 1 / 144, color: "#888", size: 8 },
+    sun: { windowDays: 1.0, sampleIntervalDays: 1 / 144, color: "#ffa500", size: 10, symbol: "☉" },  // 10-minute steps
+    moon: { windowDays: 1.05, sampleIntervalDays: 1 / 144, color: "#888", size: 8, symbol: "☽" },
     // windowDays for the planets is their solar orbit duration in days but currently unused
     // their color and size is used though
-    mercury: { windowDays: 88, sampleIntervalDays: 1 / 24, color: "#b5b5b5", size: 4 },  // hourly
-    venus: { windowDays: 225, sampleIntervalDays: 1 / 24, color: "#e8cda0", size: 4 },
-    mars: { windowDays: 687, sampleIntervalDays: 1, color: "#c1440e", size: 4 },  // daily
-    jupiter: { windowDays: 4333, sampleIntervalDays: 1, color: "#c88b3a", size: 4 },
-    saturn: { windowDays: 10759, sampleIntervalDays: 1, color: "#e4d191", size: 4 },
+    mercury: { windowDays: 88, sampleIntervalDays: 1 / 24, color: "#b5b5b5", size: 4, symbol: "☿" },  // hourly
+    venus: { windowDays: 225, sampleIntervalDays: 1 / 24, color: "#e8cda0", size: 4, symbol: "♀" },
+    mars: { windowDays: 687, sampleIntervalDays: 1, color: "#c1440e", size: 4, symbol: "♂" },  // daily
+    jupiter: { windowDays: 4333, sampleIntervalDays: 1, color: "#c88b3a", size: 4, symbol: "♃" },
+    saturn: { windowDays: 10759, sampleIntervalDays: 1, color: "#e4d191", size: 4, symbol: "♄" },
 };
+
+
 
 interface SkyRenderState {
     jd: number;
@@ -36,6 +39,7 @@ interface SkyRenderState {
     bodies: Record<BodyName, BodyConfig>;
     horizonProfile: HorizonProfile | null;
     refractionModel: RefractionModel;
+    useSymbols: boolean;
 }
 
 export class SkyRenderer {
@@ -58,7 +62,7 @@ export class SkyRenderer {
         return { width: canvas.width, height: canvas.height };
     }
 
-    render({ jd, latRad, lonDeg, sunHoriz, moonHoriz, planetHorizMap, bodies, horizonProfile, refractionModel }: SkyRenderState): void {
+    render({ jd, latRad, lonDeg, sunHoriz, moonHoriz, planetHorizMap, bodies, horizonProfile, refractionModel, useSymbols }: SkyRenderState): void {
         const dims = this.syncResolution();
         const isSouthern = latRad < 0;
         const ctx = this.ctx;
@@ -123,18 +127,22 @@ export class SkyRenderer {
         //     strokeBodyTrack(ctx, this.trackCache.get(name)!, track.color);
         // }
 
+        type BodyRenderer = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, symbol?: string) => void;
+
+        const bodyRenderer: BodyRenderer = useSymbols ? drawBodySymbol : drawBody;
+
         // Sun
         if (sunHoriz && bodies.sun.visible) {
-            const { color, size } = BODY_TRACKS.sun!;
+            const { color, size, symbol } = BODY_TRACKS.sun!;
             const pos = getEquirectangularXY(sunHoriz.azimuthRad, sunHoriz.altitudeRad, dims, isSouthern);
-            drawBody(ctx, pos.x, pos.y, size, color);
+            bodyRenderer(ctx, pos.x, pos.y, size, color, symbol);
         }
 
         // Moon
         if (moonHoriz && bodies.moon.visible) {
-            const { color, size } = BODY_TRACKS.moon!;
+            const { color, size, symbol } = BODY_TRACKS.moon!;
             const pos = getEquirectangularXY(moonHoriz.azimuthRad, moonHoriz.altitudeRad, dims, isSouthern);
-            drawBody(ctx, pos.x, pos.y, size, color);
+            bodyRenderer(ctx, pos.x, pos.y, size, color, symbol);
         }
 
         // Planets
@@ -142,8 +150,9 @@ export class SkyRenderer {
             if (!bodies[name].visible) continue;
             const color = BODY_TRACKS[name]?.color ?? "#ffffff";
             const size = BODY_TRACKS[name]?.size ?? 4;
+            const symbol = BODY_TRACKS[name]?.symbol ?? "?"
             const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dims, isSouthern);
-            drawBody(ctx, pos.x, pos.y, size, color);
+            bodyRenderer(ctx, pos.x, pos.y, size, color, symbol);
         }
     }
 }

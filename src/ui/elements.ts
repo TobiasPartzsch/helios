@@ -23,6 +23,7 @@ export const UI = {
         clockTime: document.getElementById("clock-time") as HTMLInputElement,
         horizonId: document.getElementById("horizon-id") as HTMLInputElement,
         simSpeed: document.getElementById("sim-speed") as HTMLInputElement,
+        useSymbols: document.getElementById("use-symbols") as HTMLInputElement,
     },
     buttons: {
         fetchHorizon: document.getElementById("btn-fetch-horizon") as HTMLButtonElement,
@@ -85,6 +86,7 @@ export function getObserverState() {
                 } satisfies BodyConfig,
             ]),
         ) as Record<BodyName, BodyConfig>,
+        useSymbols: UI.inputs.useSymbols?.checked ?? false,
     };
 }
 
