@@ -5,20 +5,25 @@ import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
 import { BodyConfig, BodyName } from "../ui/elements";
 import {
+    buildBodyTrackPath,
     drawBody,
-    drawBodyTrack,
     drawGrid,
     drawHorizon,
     getEquirectangularXY,
+    strokeBodyTrack,
     TrackConfig,
 } from "./skyCanvas";
 
-const PLANET_COLORS: Partial<Record<BodyName, string>> = {
-    mercury: "#b5b5b5",
-    venus: "#e8cda0",
-    mars: "#c1440e",
-    jupiter: "#c88b3a",
-    saturn: "#e4d191",
+const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
+    sun: { windowDays: 1.0, sampleIntervalDays: 1 / 144, color: "#ffa500", size: 10 },  // 10-minute steps
+    moon: { windowDays: 1.05, sampleIntervalDays: 1 / 144, color: "#888", size: 8 },
+    // windowDays for the planets is their solar orbit duration in days but currently unused
+    // their color and size is used though
+    mercury: { windowDays: 88, sampleIntervalDays: 1 / 24, color: "#b5b5b5", size: 4 },  // hourly
+    venus: { windowDays: 225, sampleIntervalDays: 1 / 24, color: "#e8cda0", size: 4 },
+    mars: { windowDays: 687, sampleIntervalDays: 1, color: "#c1440e", size: 4 },  // daily
+    jupiter: { windowDays: 4333, sampleIntervalDays: 1, color: "#c88b3a", size: 4 },
+    saturn: { windowDays: 10759, sampleIntervalDays: 1, color: "#e4d191", size: 4 },
 };
 
 interface SkyRenderState {
@@ -35,6 +40,10 @@ interface SkyRenderState {
 
 export class SkyRenderer {
     private ctx: CanvasRenderingContext2D;
+    private trackCache: Map<string, Path2D> = new Map();
+    private lastTrackJd: number = NaN;
+    private readonly TRACK_RECOMPUTE_THRESHOLD = 1 / 24; // 1 hour
+    private lastDims: { width: number; height: number } = { width: 0, height: 0 };
 
     constructor(canvas: HTMLCanvasElement) {
         this.ctx = canvas.getContext("2d")!;
@@ -55,6 +64,15 @@ export class SkyRenderer {
         const ctx = this.ctx;
         const canvas = ctx.canvas;
 
+        const dimsChanged = dims.width !== this.lastDims.width || dims.height !== this.lastDims.height;
+        const needsRecompute = dimsChanged || Math.abs(jd - this.lastTrackJd) > this.TRACK_RECOMPUTE_THRESHOLD;
+
+        if (needsRecompute) {
+            this.trackCache.clear();
+            this.lastTrackJd = jd;
+            this.lastDims = { ...dims };
+        }
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawGrid(ctx, dims, isSouthern);
 
@@ -71,33 +89,61 @@ export class SkyRenderer {
 
         // Tracks
         if (bodies.sun.enabled) {
-            const sunTrack: TrackConfig = { windowDays: 1.0, steps: 144, color: "#ffa500" };
-            drawBodyTrack(ctx, jd, latRad, lonDeg, dims, isSouthern, sunEquatorialCoordinates, sunTrack, refractionModel);
+            if (!this.trackCache.has("sun")) {
+                this.trackCache.set("sun", buildBodyTrackPath(
+                    jd, latRad, lonDeg, dims, isSouthern,
+                    sunEquatorialCoordinates, BODY_TRACKS.sun!, refractionModel
+                ));
+            }
+            strokeBodyTrack(ctx, this.trackCache.get("sun")!, BODY_TRACKS.sun!.color);
         }
 
         if (bodies.moon.enabled) {
-            const moonTrack: TrackConfig = { windowDays: 1.05, steps: 144, color: "#888" };
-            drawBodyTrack(ctx, jd, latRad, lonDeg, dims, isSouthern, moonEquatorialCoordinates, moonTrack, refractionModel);
+            if (!this.trackCache.has("moon")) {
+                this.trackCache.set("moon", buildBodyTrackPath(
+                    jd, latRad, lonDeg, dims, isSouthern,
+                    moonEquatorialCoordinates, BODY_TRACKS.moon!, refractionModel
+                ));
+            }
+            strokeBodyTrack(ctx, this.trackCache.get("moon")!, BODY_TRACKS.moon!.color);
         }
+
+        // for (const [name] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
+        //     if (!bodies[name].enabled) continue;
+        //     const track = BODY_TRACKS[name];
+        //     if (!track) continue;
+
+        //     if (!this.trackCache.has(name)) {
+        //         this.trackCache.set(name, buildBodyTrackPath(
+        //             jd, latRad, lonDeg, dims, isSouthern,
+        //             (t) => planetEquatorialCoordinates(name, t),
+        //             track, refractionModel, name
+        //         ));
+        //     }
+        //     strokeBodyTrack(ctx, this.trackCache.get(name)!, track.color);
+        // }
 
         // Sun
         if (sunHoriz && bodies.sun.visible) {
+            const { color, size } = BODY_TRACKS.sun!;
             const pos = getEquirectangularXY(sunHoriz.azimuthRad, sunHoriz.altitudeRad, dims, isSouthern);
-            drawBody(ctx, pos.x, pos.y, 10, "#ffcc00");
+            drawBody(ctx, pos.x, pos.y, size, color);
         }
 
         // Moon
         if (moonHoriz && bodies.moon.visible) {
+            const { color, size } = BODY_TRACKS.moon!;
             const pos = getEquirectangularXY(moonHoriz.azimuthRad, moonHoriz.altitudeRad, dims, isSouthern);
-            drawBody(ctx, pos.x, pos.y, 8, "#acaa93");
+            drawBody(ctx, pos.x, pos.y, size, color);
         }
 
         // Planets
         for (const [name, horiz] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
             if (!bodies[name].visible) continue;
-            const color = PLANET_COLORS[name] ?? "#ffffff";
+            const color = BODY_TRACKS[name]?.color ?? "#ffffff";
+            const size = BODY_TRACKS[name]?.size ?? 4;
             const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dims, isSouthern);
-            drawBody(ctx, pos.x, pos.y, 4, color);
+            drawBody(ctx, pos.x, pos.y, size, color);
         }
     }
 }

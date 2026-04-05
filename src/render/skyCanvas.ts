@@ -10,8 +10,9 @@ export interface CanvasDimensions {
 
 export interface TrackConfig {
     windowDays: number; // e.g., 1.0 for Sun, 1.05 for Moon
-    steps: number;      // Higher for faster bodies
+    sampleIntervalDays: number;
     color: string;
+    size: number;
 }
 
 /**
@@ -134,8 +135,7 @@ function getCardinalLabel(az: number): string | null {
 /**
  * Draws a path for a body across a 24-hour window centered on current JD.
  */
-export function drawBodyTrack(
-    ctx: CanvasRenderingContext2D,
+export function buildBodyTrackPath(
     jd: number,
     latRad: number,
     lonDeg: number,
@@ -144,52 +144,56 @@ export function drawBodyTrack(
     getEqCoords: (jd: number) => { rightAscensionRad: number, declinationRad: number },
     config: TrackConfig,
     refractionModel: RefractionModel = 'none',
-) {
-    const { width, height } = dimensions;
-    const { windowDays, steps, color } = config;
+    debugName?: string,
+): Path2D {
+    const { windowDays } = config;
+    const steps = Math.floor(windowDays / config.sampleIntervalDays);
+    const stepInDays = config.sampleIntervalDays;
 
-    ctx.setLineDash([4, 4]); // Dashed line
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.5; // Make the track slightly transparent
-
-    ctx.beginPath();
-
-    // Track the last point to prevent drawing lines across the screen during wrap-around
-    let lastX: number | null = null;
-    let lastY: number | null = null;
-
-    // 24-hour window: -12h to +12h in 5-minute steps (288 samples)
-    const stepInDays = windowDays / steps;
+    const path = new Path2D();
+    let lastShiftedAz: number | null = null;
 
     for (let i = 0; i <= steps; i++) {
-        const sampleJd = (jd - 0.5) + (i * stepInDays);
-        const eq = getEqCoords(sampleJd);
-        const lstRad = localSiderealTimeHours(sampleJd, lonDeg) * 15 * (Math.PI / 180);
-        const horiz = equatorialToHorizontal(eq, latRad, lstRad, refractionModel);
+        const sampleJd = (jd - windowDays / 2) + (i * stepInDays);
+        try {
+            const eq = getEqCoords(sampleJd);
+            const lstRad = localSiderealTimeHours(sampleJd, lonDeg) * 15 * (Math.PI / 180);
+            const horiz = equatorialToHorizontal(eq, latRad, lstRad, refractionModel);
 
-        const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dimensions, isSouthern);
+            const centerOffset = isSouthern ? 0 : Math.PI;
+            let shiftedAz = horiz.azimuthRad - centerOffset;
+            while (shiftedAz <= -Math.PI) shiftedAz += 2 * Math.PI;
+            while (shiftedAz > Math.PI) shiftedAz -= 2 * Math.PI;
 
-        // Logic for drawing or jumping
-        if (lastX === null) {
-            ctx.moveTo(pos.x, pos.y);
-        } else {
-            // If the jump in X is more than half the canvas width, it's a wrap-around!
-            const dx = Math.abs(pos.x - lastX);
-            if (dx > width / 2) {
-                ctx.moveTo(pos.x, pos.y);
+            const isWrap = lastShiftedAz !== null &&
+                ((lastShiftedAz > Math.PI / 2 && shiftedAz < -Math.PI / 2) ||
+                    (lastShiftedAz < -Math.PI / 2 && shiftedAz > Math.PI / 2));
+
+            lastShiftedAz = shiftedAz;
+
+            const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dimensions, isSouthern);
+
+            if (i === 0 || isWrap) {
+                path.moveTo(pos.x, pos.y);
             } else {
-                ctx.lineTo(pos.x, pos.y);
+                path.lineTo(pos.x, pos.y);
             }
+        } catch (error) {
+            console.log(`error at i=${i}, jd=${sampleJd.toFixed(1)}:`, error);
         }
-
-        lastX = pos.x;
-        lastY = pos.y;
     }
 
-    ctx.stroke();
-    ctx.setLineDash([]); // Reset
-    ctx.globalAlpha = 1.0; // Reset
+    return path;
+}
+
+export function strokeBodyTrack(ctx: CanvasRenderingContext2D, path: Path2D, color: string): void {
+    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.5;
+    ctx.stroke(path);
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1.0;
 }
 
 /**
@@ -223,7 +227,6 @@ export function drawMoonFace(
 
     const dy = sunHoriz.altitudeRad - moonHoriz.altitudeRad;
     const angle = Math.atan2(dy, dAz); // Use normalized dAz
-    const dx = sunHoriz.azimuthRad - moonHoriz.azimuthRad;
 
     // 3. Draw the illuminated part
     // For a simple start, we can use an ellipse overlay or a clipping path.
