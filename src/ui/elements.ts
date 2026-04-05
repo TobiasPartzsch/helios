@@ -5,7 +5,7 @@ export interface BodyConfig {
     visible: boolean;
 }
 
-export const BODY_NAMES = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn"] as const;
+export const BODY_NAMES = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune"] as const;
 export type BodyName = typeof BODY_NAMES[number];
 
 export const UI = {
@@ -43,6 +43,8 @@ export const UI = {
         mars: document.getElementById("out-mars") as HTMLElement,
         jupiter: document.getElementById("out-jupiter") as HTMLElement,
         saturn: document.getElementById("out-saturn") as HTMLElement,
+        uranus: document.getElementById("out-uranus") as HTMLElement,
+        neptune: document.getElementById("out-neptune") as HTMLElement,
         horizonStatus: document.getElementById("horizon-status") as HTMLElement,
     },
     select: {

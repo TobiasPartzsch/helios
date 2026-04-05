@@ -25,6 +25,8 @@ const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
     mars: { windowDays: 687, sampleIntervalDays: 1, color: "#c1440e", size: 4, symbol: "♂" },  // daily
     jupiter: { windowDays: 4333, sampleIntervalDays: 1, color: "#c88b3a", size: 4, symbol: "♃" },
     saturn: { windowDays: 10759, sampleIntervalDays: 1, color: "#e4d191", size: 4, symbol: "♄" },
+    uranus: { windowDays: 30687, sampleIntervalDays: 1, color: "#7de8e8", size: 4, symbol: "⛢" },
+    neptune: { windowDays: 60190, sampleIntervalDays: 1, color: "#5b7fdb", size: 4, symbol: "♆" },
 };
 
 
