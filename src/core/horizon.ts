@@ -1,3 +1,5 @@
+import { degToRad } from "./math";
+
 export interface HorizonPoint {
     azimuthRad: number;
     altitudeRad: number;
@@ -47,8 +49,8 @@ export async function fetchHorizonById(id: string): Promise<HorizonProfile> {
     // 3. Convert to Radians and Sort
     const points = Array.from(highestPoints.entries())
         .map(([az, alt]) => ({
-            azimuthRad: az * (Math.PI / 180),
-            altitudeRad: alt * (Math.PI / 180)
+            azimuthRad: degToRad(az),
+            altitudeRad: degToRad(alt)
         }))
         .sort((a, b) => a.azimuthRad - b.azimuthRad);
 

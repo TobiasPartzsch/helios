@@ -1,6 +1,7 @@
 import { equatorialToHorizontal } from "../core/coordinates/horizontal";
 import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
+import { degToRad, HALF_PI, hoursToRad, PI, TWO_PI } from "../core/math";
 import { localSiderealTimeHours } from "../core/time/sidereal";
 
 export interface CanvasDimensions {
@@ -31,20 +32,20 @@ export function getEquirectangularXY(
     // such that 180° becomes 0° (the new center).
     // Then we add half the width.
 
-    const centerOffset = isSouthern ? 0 : Math.PI;
+    const centerOffset = isSouthern ? 0 : PI;
     let shiftedAz = azimuthRad - centerOffset;
 
     // Normalize to [-PI, PI]
-    while (shiftedAz <= -Math.PI) shiftedAz += 2 * Math.PI;
-    while (shiftedAz > Math.PI) shiftedAz -= 2 * Math.PI;
+    while (shiftedAz <= -PI) shiftedAz += TWO_PI;
+    while (shiftedAz > PI) shiftedAz -= TWO_PI;
 
     // Map [-PI, PI] to [0, width]
     // (shiftedAz / 2PI) gives [-0.5, 0.5]. 
     // Adding 0.5 gives [0, 1].
-    const x = (shiftedAz / (2 * Math.PI) + 0.5) * width;
+    const x = (shiftedAz / (TWO_PI) + 0.5) * width;
 
     // Y-axis: Altitude PI/2 (top) to -PI/2 (bottom)
-    const normalizedAlt = (altitudeRad + Math.PI / 2) / Math.PI;
+    const normalizedAlt = (altitudeRad + HALF_PI) / PI;
     const y = height * (1 - normalizedAlt);
 
     return { x, y };
@@ -58,7 +59,7 @@ export function drawBody(
     color: string
 ) {
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.arc(x, y, radius, 0, TWO_PI);
     ctx.fillStyle = color;
     ctx.fill();
 }
@@ -69,7 +70,6 @@ export function drawGrid(
     isSouthern: boolean
 ) {
     const { width, height } = dimensions;
-    const centerOffset = isSouthern ? 0 : 180; // 0 for North-center, 180 for South-center
 
     ctx.strokeStyle = '#222'; // Subtle dark grey
     ctx.lineWidth = 1;
@@ -79,9 +79,9 @@ export function drawGrid(
     // 1. Draw Altitude Lines (Parallels)
     // Every 30 degrees from -90 to 90
     for (let altDeg = -90; altDeg <= 90; altDeg += 30) {
-        const altRad = altDeg * (Math.PI / 180);
+        const altRad = degToRad(altDeg);
         // We can reuse the Y logic from our mapping
-        const y = height * (1 - (altRad + Math.PI / 2) / Math.PI);
+        const y = height * (1 - (altRad + HALF_PI) / PI);
 
         ctx.beginPath();
         ctx.moveTo(0, y);
@@ -92,7 +92,7 @@ export function drawGrid(
 
     // 2. Draw Azimuth Lines (Meridians)
     for (let azDeg = 0; azDeg < 360; azDeg += 45) {
-        const azRad = azDeg * (Math.PI / 180);
+        const azRad = degToRad(azDeg);
 
         // Pass 0 for altitude as we only need the horizontal (X) position
         const { x } = getEquirectangularXY(azRad, 0, dimensions, isSouthern);
@@ -144,7 +144,6 @@ export function buildBodyTrackPath(
     getEqCoords: (jd: number) => { rightAscensionRad: number, declinationRad: number },
     config: TrackConfig,
     refractionModel: RefractionModel = 'none',
-    debugName?: string,
 ): Path2D {
     const { windowDays } = config;
     const steps = Math.floor(windowDays / config.sampleIntervalDays);
@@ -157,17 +156,17 @@ export function buildBodyTrackPath(
         const sampleJd = (jd - windowDays / 2) + (i * stepInDays);
         try {
             const eq = getEqCoords(sampleJd);
-            const lstRad = localSiderealTimeHours(sampleJd, lonDeg) * 15 * (Math.PI / 180);
+            const lstRad = hoursToRad(localSiderealTimeHours(sampleJd, lonDeg));
             const horiz = equatorialToHorizontal(eq, latRad, lstRad, refractionModel);
 
-            const centerOffset = isSouthern ? 0 : Math.PI;
+            const centerOffset = isSouthern ? 0 : PI;
             let shiftedAz = horiz.azimuthRad - centerOffset;
-            while (shiftedAz <= -Math.PI) shiftedAz += 2 * Math.PI;
-            while (shiftedAz > Math.PI) shiftedAz -= 2 * Math.PI;
+            while (shiftedAz <= -PI) shiftedAz += TWO_PI;
+            while (shiftedAz > PI) shiftedAz -= TWO_PI;
 
             const isWrap = lastShiftedAz !== null &&
-                ((lastShiftedAz > Math.PI / 2 && shiftedAz < -Math.PI / 2) ||
-                    (lastShiftedAz < -Math.PI / 2 && shiftedAz > Math.PI / 2));
+                ((lastShiftedAz > HALF_PI && shiftedAz < -HALF_PI) ||
+                    (lastShiftedAz < -HALF_PI && shiftedAz > HALF_PI));
 
             lastShiftedAz = shiftedAz;
 
@@ -214,7 +213,7 @@ export function drawMoonFace(
 
     // 1. Draw the "Dark Side" (Background of the disk)
     ctx.beginPath();
-    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.arc(centerX, centerY, radius, 0, TWO_PI);
     ctx.fillStyle = "#1a1a1a"; // Earthshine/Shadow color
     ctx.fill();
 
@@ -222,8 +221,8 @@ export function drawMoonFace(
     // This determines which way the crescent "points" in our local sky
     let dAz = sunHoriz.azimuthRad - moonHoriz.azimuthRad;
     // Normalize dAz to [-PI, PI]
-    while (dAz <= -Math.PI) dAz += 2 * Math.PI;
-    while (dAz > Math.PI) dAz -= 2 * Math.PI;
+    while (dAz <= -PI) dAz += TWO_PI;
+    while (dAz > PI) dAz -= TWO_PI;
 
     const dy = sunHoriz.altitudeRad - moonHoriz.altitudeRad;
     const angle = Math.atan2(dy, dAz); // Use normalized dAz
@@ -238,12 +237,12 @@ export function drawMoonFace(
 
     // Draw the bright half-circle
     ctx.beginPath();
-    ctx.arc(0, 0, radius, -Math.PI / 2, Math.PI / 2);
+    ctx.arc(0, 0, radius, -HALF_PI, HALF_PI);
 
     // The "Phase" effect: an inner ellipse that grows/shrinks
     // fraction 0.5 = straight line, 1.0 = full circle, 0.0 = empty
     const innerWidth = radius * (2 * fraction - 1);
-    ctx.ellipse(0, 0, Math.abs(innerWidth), radius, 0, Math.PI / 2, -Math.PI / 2, innerWidth < 0);
+    ctx.ellipse(0, 0, Math.abs(innerWidth), radius, 0, HALF_PI, -HALF_PI, innerWidth < 0);
 
     ctx.fillStyle = '#acaa93';
     ctx.fill();

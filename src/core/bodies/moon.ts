@@ -1,5 +1,5 @@
 import type { EquatorialCoords } from "../coordinates";
-import { degToRad, normalizeDeg, normalizeRad, radToDeg } from "../math";
+import { degToRad, normalizeDeg, normalizeRad, PI, radToDeg } from "../math";
 import { getDaysSinceJ2000, getDaysSinceJ2000_5 } from '../time/julian';
 
 /**
@@ -194,7 +194,7 @@ export function calculateIllumination(
     const psi = Math.acos(Math.max(-1, Math.min(1, cosPsi)));
 
     // For a rough approximation, the Phase Angle is roughly 180 - psi
-    const phaseAngle = Math.PI - psi;
+    const phaseAngle = PI - psi;
 
     // Illuminated fraction (0.0 to 1.0)
     return (1 + Math.cos(phaseAngle)) / 2;
