@@ -55,6 +55,7 @@ Implemented:
 - Browser-based sky rendering
 - Time simulation controls
 - Horizon profile integration
+- Optional astronomical symbol rendering for all bodies
 
 ## Current Engine
 
@@ -69,8 +70,6 @@ Planetary regression fixtures now include JPL Horizons geocentric ICRF reference
 Invariant tests now cover core math, time, coordinate, refraction, and orbit helper transformations
 
 ## Next Steps by priority
-- **Planet Tracks**: Extend `drawBodyTrack` to support planets via a name-based 
-  wrapper around `planetEquatorialCoordinates`.
 - **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.
 - **Voyage Mode**: Import a JSON (later CSV, GPX) waypoint list and animate observer position over time,
   interpolating along great circle routes. Demonstrates why globe geometry produces 
@@ -82,6 +81,13 @@ Invariant tests now cover core math, time, coordinate, refraction, and orbit hel
   reclaim sidebar space on smaller screens. Somewhat quick win to be used as a filler.
 - **Astronomic Symbols option**: Alternatively to circles, render bodies as their astronomical symbols.
 - **Position on different bodies**: Instead of only earth, allow the option to render the sky on any body that is simulated.
+- **Planet Tracks**: Basic track rendering is implemented and cached. The planets don't render correctly
+  but inner planets match their mid position at least. Outer planets (Mars, Jupiter, Saturn) show a 
+  positional discrepancy between the track midpoint and the current position dot, 
+  likely due to LST mismatch between track sampling and dot computation. 
+  Needs investigation: compare `lstRad` at track midpoint vs dot computation for an 
+  outer planet to confirm root cause.
+  Further development on pause.
 
 ## Project Log
 

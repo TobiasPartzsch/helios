@@ -94,3 +94,32 @@
 - moved planetary reference cases into a dedicated fixture file
 - updated propagate.test.ts to consume shared fixture data
 - verified test suite passes with the expanded planetary reference set
+
+## Recent Progress
+
+- Implemented planet track rendering via `buildBodyTrackPath` / `strokeBodyTrack`.
+- Added `Path2D`-based track cache in `SkyRenderer`, invalidated on JD change or resize.
+- Moved track style (color, dash, alpha) out of path builder into `strokeBodyTrack`.
+- Replaced hardcoded steps with `sampleIntervalDays` in `TrackConfig`; removed canvas-width-based step count.
+- Wrap detection moved to shifted-azimuth space.
+- Known issue: outer planet track midpoint does not match current position dot — LST discrepancy suspected. Inner planets unaffected.
+
+## Recent Progress
+
+### Track Rendering Refactor
+- Split `drawBodyTrack` into `buildBodyTrackPath` (returns `Path2D`) and `strokeBodyTrack` (applies style)
+- Added `Path2D`-based track cache in `SkyRenderer`, invalidated on JD change (>1h) or canvas resize
+- Fixed window centering — was hardcoded to `jd - 0.5`, now `jd - windowDays/2`
+- Replaced canvas-width wrap heuristic with shifted-azimuth boundary detection
+- Replaced `steps` with `sampleIntervalDays` in `TrackConfig`
+- Consolidated body config (color, size, track params, symbol) into `BODY_TRACKS`
+- Planet tracks remain unresolved — outer planets show positional discrepancy, likely LST-related
+
+### Math Cleanup
+- Replaced raw `Math.PI` usages in production code with `PI`, `TWO_PI`, `HALF_PI`, `degToRad`, `hoursToRad`
+- Extracted `altToY` helper to remove duplicated altitude-to-canvas mapping
+- Replaced local `degToRad` lambdas in test files with shared import
+
+### Features
+- Added astronomical symbol rendering — global toggle renders bodies as Unicode symbols (☉ ☽ ☿ ♀ ♂ ♃ ♄ ⛢ ♆)
+- Added Uranus and Neptune
