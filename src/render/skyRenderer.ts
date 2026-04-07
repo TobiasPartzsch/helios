@@ -31,7 +31,7 @@ const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
 
 
 
-interface SkyRenderState {
+export interface SkyRenderState {
     jd: number;
     latRad: number;
     lonDeg: number;
@@ -64,8 +64,25 @@ export class SkyRenderer {
         return { width: canvas.width, height: canvas.height };
     }
 
-    render({ jd, latRad, lonDeg, sunHoriz, moonHoriz, planetHorizMap, bodies, horizonProfile, refractionModel, useSymbols }: SkyRenderState): void {
-        const dims = this.syncResolution();
+    static forOffscreen(width: number, height: number): { renderer: SkyRenderer; canvas: HTMLCanvasElement } {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        return { renderer: new SkyRenderer(canvas), canvas };
+    }
+
+    render(
+        {
+            jd,
+            latRad, lonDeg,
+            sunHoriz, moonHoriz, planetHorizMap,
+            bodies,
+            horizonProfile,
+            refractionModel,
+            useSymbols }: SkyRenderState,
+        explicitDims?: { width: number; height: number },
+    ): void {
+        const dims = explicitDims ?? this.syncResolution();
         const isSouthern = latRad < 0;
         const ctx = this.ctx;
         const canvas = ctx.canvas;

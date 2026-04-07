@@ -71,15 +71,16 @@ Invariant tests now cover core math, time, coordinate, refraction, and orbit hel
 
 ## Next Steps by priority
 - **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.
+- **Zoom**: Horizon line is very difficult to see at many locations so being able to zoom in would make sense.
+- **Solar plane view**: Alternatively to a position on Earth (or another body), render the solar plane.
 - **Voyage Mode**: Import a JSON (later CSV, GPX) waypoint list and animate observer position over time,
   interpolating along great circle routes. Demonstrates why globe geometry produces 
   "curved" flight paths and shows the sky shifting continuously across hemispheres.
-- **Zoom**: Horizon line is very difficult to see at many locations so being able to zoom in would make sense.
+- **Gravity based engine**: Switch gravity based simulation instead of pre-computed data points (VSOP87B).
 - **Sky Color**: Change the sky depending on time representing illumination from the sun and moon. Probably not worth it.
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.
 - **Lunar Detail Tooltip**: Convert the moon face canvas to a hover overlay to 
   reclaim sidebar space on smaller screens. Somewhat quick win to be used as a filler.
-- **Astronomic Symbols option**: Alternatively to circles, render bodies as their astronomical symbols.
 - **Position on different bodies**: Instead of only earth, allow the option to render the sky on any body that is simulated.
 - **Planet Tracks**: Basic track rendering is implemented and cached. The planets don't render correctly
   but inner planets match their mid position at least. Outer planets (Mars, Jupiter, Saturn) show a 

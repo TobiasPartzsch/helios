@@ -9,14 +9,16 @@ import { formatEoT, formatHours } from "./core/time/format";
 import { dateToJulianDate } from "./core/time/julian";
 import { localSiderealTimeHours } from "./core/time/sidereal";
 import { MoonFaceRenderer } from "./render/moonFaceRenderer";
-import { SkyRenderer } from "./render/skyRenderer";
+import { SkyRenderer, SkyRenderState } from "./render/skyRenderer";
 import "./style.css";
 import { BODY_NAMES, BodyName, getObserverState, syncUiFromDate, UI } from "./ui/elements";
 import { initHorizonFetch } from "./ui/horizonController";
+import { LensController } from "./ui/lensController";
 
 // Renderers
 const skyRenderer = new SkyRenderer(UI.canvas.main);
 const moonFaceRenderer = new MoonFaceRenderer(UI.canvas.moonFace);
+const lensController = new LensController();
 
 // Simulation state
 let currentHorizonProfile: HorizonProfile | null = null;
@@ -103,10 +105,8 @@ function update(providedJd?: number) {
     outputs.jd.innerText = jd.toFixed(5);
 
     // Render
-    skyRenderer.render({
-        jd,
-        latRad,
-        lonDeg: state.lonDeg,
+    const renderState: SkyRenderState = {
+        jd, latRad, lonDeg: state.lonDeg,
         sunHoriz: sunHoriz ?? undefined,
         moonHoriz: moonHoriz ?? undefined,
         planetHorizMap,
@@ -114,7 +114,9 @@ function update(providedJd?: number) {
         horizonProfile: currentHorizonProfile,
         refractionModel: state.refractionModel,
         useSymbols: state.useSymbols,
-    });
+    };
+    skyRenderer.render(renderState);
+    lensController.setRenderState(renderState);
 }
 
 function animate(timestamp: number) {

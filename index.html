@@ -10,6 +10,7 @@
     <div id="helios-root">
         <main id="viewport">
             <canvas id="sky-canvas"></canvas>
+            <canvas id="lens-canvas" class="lens-overlay" style="display:none;"></canvas>
             <!-- The Command Strip Container -->
             <footer class="command-strip-container">
                 <!-- Row 1: Time & Simulation -->
@@ -29,6 +30,9 @@
                         <input type="range" id="sim-speed" min="1" max="100" value="1">
                         <span id="speed-val">1</span>x
                     </label>
+                    <div class="lens-controls">
+                        <button id="btn-lens" title="Magnifying Lens (L)">🔍 Lens</button>
+                    </div>
                 </div>
                 <!-- Row 2: Environment & Horizon -->
                 <div class="horizon-controls">

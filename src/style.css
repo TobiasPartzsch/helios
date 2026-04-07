@@ -41,6 +41,7 @@ body {
     background: var(--color-bg-space);
     border-radius: var(--radius-main);
     overflow: hidden;
+    position: relative;
 }
 
 command-strip-container {
@@ -77,6 +78,16 @@ command-strip-container {
     border-bottom: 1px solid var(--color-border);
     /* Set cursor to crosshair for coordinate picking later? */
     cursor: crosshair;
+}
+
+#lens-canvas {
+    position: absolute;
+    display: none;
+    pointer-events: none;
+    /* let mouse events fall through to sky-canvas */
+    border-radius: 2px;
+    cursor: none;
+    background: #000;
 }
 
 /* --- Control Sidebar --- */

@@ -12,6 +12,7 @@ export const UI = {
     canvas: {
         main: document.getElementById("sky-canvas") as HTMLCanvasElement,
         moonFace: document.getElementById("moon-face-canvas") as HTMLCanvasElement,
+        lens: document.getElementById("lens-canvas") as HTMLCanvasElement,
     },
     inputs: {
         lat: document.getElementById("lat") as HTMLInputElement,
@@ -29,6 +30,7 @@ export const UI = {
         fetchHorizon: document.getElementById("btn-fetch-horizon") as HTMLButtonElement,
         play: document.getElementById("btn-play") as HTMLButtonElement,
         pause: document.getElementById("btn-pause") as HTMLButtonElement,
+        lens: document.getElementById("btn-lens") as HTMLButtonElement,
     },
     outputs: {
         jd: document.getElementById("out-jd") as HTMLElement,
