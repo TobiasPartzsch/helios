@@ -25,6 +25,7 @@ export function initHorizonFetch(
             UI.inputs.elev.value = profile.observer.elev.toString();
 
             UI.outputs.horizonStatus.innerText = `ID: ${profile.id} (${profile.points.length} pts)`;
+            onProfileLoaded(profile);
         } catch (err) {
             console.error("Horizon vanished:", err);
             outputs.horizonStatus.innerText = "Horizon Error";
