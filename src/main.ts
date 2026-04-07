@@ -11,6 +11,7 @@ import { localSiderealTimeHours } from "./core/time/sidereal";
 import { MoonFaceRenderer } from "./render/moonFaceRenderer";
 import { SkyRenderer, SkyRenderState } from "./render/skyRenderer";
 import "./style.css";
+import { applyEasterEgg } from "./ui/easteregg";
 import { BODY_NAMES, BodyName, getObserverState, syncUiFromDate, UI } from "./ui/elements";
 import { initHorizonFetch } from "./ui/horizonController";
 import { LensController } from "./ui/lensController";
@@ -98,6 +99,8 @@ function update(providedJd?: number) {
             out.title = formatRaDec(eq);
         }
     }
+
+    applyEasterEgg(state.date);
 
     // Time telemetry
     outputs.lst.innerText = formatHours(lstHours);
