@@ -146,3 +146,16 @@
 - Triggered by simulation date being April 1st UTC, not wall clock
 - Reverts automatically when simulation time leaves April 1st
 - Romaji names as tooltips
+
+### Eclipse Candidate Detection
+- Refactored Sun and Moon position code to expose reusable ecliptic-coordinate helpers
+- Added eclipse candidate detection based on Moon-Sun ecliptic longitude difference and Moon ecliptic latitude
+- Added tests against known solar and lunar eclipse dates using a search window around the event time
+- Surfaced eclipse candidate info in Sun and Moon telemetry
+- Moved Moon phase readout into the lunar detail panel to reduce telemetry crowding
+
+### Code Cleanup
+- Replaced several lunar model magic numbers with named constants
+- Extracted reusable linear angle progression helper into `src/core/angles.ts`
+- Renamed angular separation vs. ecliptic longitude difference helpers to better reflect their meaning
+- Fixed CSS selector for `.command-strip-container`
