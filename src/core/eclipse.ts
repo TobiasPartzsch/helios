@@ -12,7 +12,7 @@ export interface EclipseCandidateInfo {
 
 const ECLIPSE_LIMITS = {
     maxConjunctionErrorDeg: 15,
-    maxOppositionErrorDeg: 15,
+    maxOppositionErrorDeg: 20,
     maxEclipticLatitudeDeg: 1.5,
 };
 

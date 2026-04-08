@@ -39,3 +39,11 @@ export function formatEoT(hours: number): string {
     const pad = (n: number) => n.toString().padStart(2, '0');
     return `${sign}${pad(mm)}:${pad(ss)}`;
 }
+
+export function formatEclipseInfo(
+    label: string,
+    longitudeErrorDeg: number,
+    eclipticLatitudeDeg: number,
+): string {
+    return `${label} Δλ:${longitudeErrorDeg.toFixed(1)}°, β:${eclipticLatitudeDeg.toFixed(1)}°`;
+}

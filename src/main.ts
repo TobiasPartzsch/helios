@@ -2,10 +2,11 @@ import { moonEquatorialCoordinates, moonPhase } from "./core/bodies/moon";
 import { sunEquatorialCoordinates } from "./core/bodies/sun";
 import type { EquatorialCoords, HorizontalCoords } from "./core/coordinates";
 import { equatorialToHorizontal } from "./core/coordinates";
+import { getLunarEclipseCandidateInfo, getSolarEclipseCandidateInfo } from "./core/eclipse";
 import { HorizonProfile } from "./core/horizon";
 import { degToRad, radToDeg, radToHours } from "./core/math";
 import { planetEquatorialCoordinates } from "./core/orbit/propagate";
-import { formatEoT, formatHours } from "./core/time/format";
+import { formatEclipseInfo, formatEoT, formatHours } from "./core/time/format";
 import { dateToJulianDate } from "./core/time/julian";
 import { localSiderealTimeHours } from "./core/time/sidereal";
 import { MoonFaceRenderer } from "./render/moonFaceRenderer";
@@ -66,9 +67,14 @@ function update(providedJd?: number) {
         const sunEq = sunEquatorialCoordinates(jd);
         sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
         const eotHours = lmtHours - 12 - (lstHours - radToHours(sunEq.rightAscensionRad));
-        outputs.sun.innerText = formatAltAz(sunHoriz);
+        const solarEclipse = getSolarEclipseCandidateInfo(jd);
+
+        outputs.sun.innerText = solarEclipse.isCandidate
+            ? `${formatAltAz(sunHoriz)} | ${formatEclipseInfo("Solar cand.", solarEclipse.longitudeErrorDeg, solarEclipse.eclipticLatitudeDeg)}`
+            : formatAltAz(sunHoriz);
         outputs.sun.title = formatRaDec(sunEq);
         outputs.eot.innerText = formatEoT(eotHours);
+
     }
 
     // Moon
@@ -77,7 +83,11 @@ function update(providedJd?: number) {
         const moonEq = moonEquatorialCoordinates(jd);
         moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad, state.refractionModel);
         const phaseInfo = moonPhase(jd);
-        outputs.moon.innerText = formatAltAz(moonHoriz);
+        const lunarEclipse = getLunarEclipseCandidateInfo(jd);
+
+        outputs.moon.innerText = lunarEclipse.isCandidate
+            ? `${formatAltAz(moonHoriz)} | ${formatEclipseInfo("Lunar cand.", lunarEclipse.longitudeErrorDeg, lunarEclipse.eclipticLatitudeDeg)}`
+            : formatAltAz(moonHoriz);
         outputs.moon.title = formatRaDec(moonEq);
         outputs.phase.innerText = `${phaseInfo.phaseName} (${(phaseInfo.illuminatedFraction * 100).toFixed(1)}%)`;
         moonFaceRenderer.render({
