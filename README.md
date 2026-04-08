@@ -56,6 +56,8 @@ Implemented:
 - Time simulation controls
 - Horizon profile integration
 - Optional astronomical symbol rendering for all bodies
+- Zoom / Magnifying Lens: Cursor-following lens overlay with adjustable zoom and size.
+  Offscreen rendering decoupled from display for performance. FOV readout in degrees.
 
 ## Current Engine
 
@@ -71,11 +73,12 @@ Invariant tests now cover core math, time, coordinate, refraction, and orbit hel
 
 ## Next Steps by priority
 - **Lunar Elongation**: Add the angular distance readout to the Lunar Detail panel to refine eclipse and phase prediction.
-- **Zoom**: Horizon line is very difficult to see at many locations so being able to zoom in would make sense.
-- **Solar plane view**: Alternatively to a position on Earth (or another body), render the solar plane.
-- **Voyage Mode**: Import a JSON (later CSV, GPX) waypoint list and animate observer position over time,
-  interpolating along great circle routes. Demonstrates why globe geometry produces 
+- **Voyage Mode**: Import a CSV waypoint list (`timestamp_utc, lat, lon, elev_m`) and animate observer 
+  position over time, interpolating along great circle routes. Playback controls with rewind support. 
+  Track extent shown as overlay on sky canvas. Demonstrates why globe geometry produces 
   "curved" flight paths and shows the sky shifting continuously across hemispheres.
+  No real data format support planned -- CSV as demonstration only.
+- **Solar plane view**: Alternatively to a position on Earth (or another body), render the solar plane.
 - **Gravity based engine**: Switch gravity based simulation instead of pre-computed data points (VSOP87B).
 - **Sky Color**: Change the sky depending on time representing illumination from the sun and moon. Probably not worth it.
 - **Stars and Constellations**: Import a basic star catalog (e.g., Yale Bright Star) to fill the celestial vault. Probably not.

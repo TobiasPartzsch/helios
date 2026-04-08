@@ -123,3 +123,26 @@
 ### Features
 - Added astronomical symbol rendering — global toggle renders bodies as Unicode symbols (☉ ☽ ☿ ♀ ♂ ♃ ♄ ⛢ ♆)
 - Added Uranus and Neptune
+
+## Recent Progress
+
+### Magnifying Lens
+- Implemented `LensController` in `src/ui/lensController.ts`
+- Lens canvas overlay absolutely positioned over sky canvas, hidden by default
+- Activated via button or `L` key, dismissed via right-click or Escape
+- Cursor-following mode, click to anchor/place, second click to dismiss
+- Scroll wheel adjusts zoom factor (0.5× – 10×), `+`/`-` keys resize lens rectangle
+- Offscreen rendering via `SkyRenderer.forOffscreen()` factory
+- Offscreen re-render decoupled from `drawImage` crop -- mousemove is now cheap
+- Overlay labels: zoom factor (bottom-right), FOV in degrees (bottom-left)
+- Crosshair and border drawn on lens canvas
+
+### Bug Fixes
+- `horizonController.ts`: `onProfileLoaded` callback was never invoked after fetch
+- `index.html`: Neptune label had `for="body-saturn-enabled"` (copy-paste from Saturn row)
+
+### Easter Egg
+- Body names replaced with Sailor Moon character names (Japanese, family name first)
+- Triggered by simulation date being April 1st UTC, not wall clock
+- Reverts automatically when simulation time leaves April 1st
+- Romaji names as tooltips
