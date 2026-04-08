@@ -128,7 +128,6 @@
                                 <label for="body-moon-visible" class="body-visible-label">Show on map</label>
                                 <div class="body-telemetry">
                                     <span id="out-moon" class="mono" title="">-</span>
-                                    <span id="out-phase" class="mono">-</span>
                                 </div>
                             </div>
 
@@ -208,8 +207,10 @@
                     <section id="lunar-detail">
                         <h3>Lunar Illumination</h3>
                         <div class="lunar-container">
-                            <!-- A square canvas for the moon's face -->
                             <canvas id="moon-face-canvas" width="150" height="150"></canvas>
+                            <div class="lunar-phase-readout">
+                                <span id="out-phase" class="mono">-</span>
+                            </div>
                         </div>
                     </section>
                 </section>
