@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { moonPhase } from "./moon";
+import { lunarElongationDeg, moonPhase } from "./moon";
 
 describe("moon phase", () => {
     it("is near full around 2000-01-21", () => {
@@ -17,4 +17,15 @@ describe("moon phase", () => {
         const phase = moonPhase(jd);
         expect(phase.illuminatedFraction).toBeLessThan(0.1);
     });
+
+    it("has elongation near 180° around full Moon", () => {
+        const jd = 2451565.2;
+        expect(lunarElongationDeg(jd)).toBeGreaterThan(150);
+    });
+
+    it("has elongation near 0° around new Moon", () => {
+        const jd = 2451550.0;
+        expect(lunarElongationDeg(jd)).toBeLessThan(30);
+    });
 });
+

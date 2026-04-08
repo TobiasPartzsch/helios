@@ -39,3 +39,21 @@ export function angularDifferenceDeg(a: number, b: number): number {
     const diff = ((a - b + 180) % 360 + 360) % 360 - 180;
     return Math.abs(diff);
 }
+
+export function angularSeparationRad(
+    ra1: number,
+    dec1: number,
+    ra2: number,
+    dec2: number,
+): number {
+    const cosSep =
+        Math.sin(dec1) * Math.sin(dec2) +
+        Math.cos(dec1) * Math.cos(dec2) * Math.cos(ra1 - ra2);
+
+    const clamped = Math.max(-1, Math.min(1, cosSep));
+    return Math.acos(clamped);
+}
+
+export function signedAngularDifferenceRad(a: number, b: number): number {
+    return ((a - b + PI) % TWO_PI + TWO_PI) % TWO_PI - PI;
+}

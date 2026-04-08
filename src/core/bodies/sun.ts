@@ -1,6 +1,34 @@
+import { linearAngleDeg } from "../angles";
 import type { EquatorialCoords } from "../coordinates";
 import { degToRad, normalizeDeg, normalizeRad } from "../math";
 import { getDaysSinceJ2000 } from "../time/julian";
+
+const SUN_MEAN_LONGITUDE = { baseDeg: 280.46, rateDegPerDay: 0.9856474 };
+const SUN_MEAN_ANOMALY = { baseDeg: 357.528, rateDegPerDay: 0.9856003 };
+const SUN_EQUATION_OF_CENTER_DEG = {
+    firstOrder: 1.915,
+    secondOrder: 0.020,
+};
+export const MEAN_OBLIQUITY = { baseDeg: 23.439, rateDegPerDay: -0.0000004 };
+
+export function sunEclipticLongitudeRad(jd: number): number {
+    const n = getDaysSinceJ2000(jd);
+
+    // Mean longitude L (deg)
+    const L = linearAngleDeg(SUN_MEAN_LONGITUDE.baseDeg, SUN_MEAN_LONGITUDE.rateDegPerDay, n);
+
+    // Mean anomaly g (deg)
+    const g = linearAngleDeg(SUN_MEAN_ANOMALY.baseDeg, SUN_MEAN_ANOMALY.rateDegPerDay, n);
+    const gRad = degToRad(g);
+
+    let lambda =
+        L +
+        SUN_EQUATION_OF_CENTER_DEG.firstOrder * Math.sin(gRad) +
+        SUN_EQUATION_OF_CENTER_DEG.secondOrder * Math.sin(2 * gRad);
+    lambda = normalizeDeg(lambda);
+
+    return degToRad(lambda);
+}
 
 /**
  * Compute the Sun's apparent equatorial coordinates (RA/Dec) for a given Julian Date.
@@ -9,24 +37,11 @@ import { getDaysSinceJ2000 } from "../time/julian";
 export function sunEquatorialCoordinates(jd: number): EquatorialCoords {
     const n = getDaysSinceJ2000(jd);
 
-    // Mean longitude L (deg)
-    let L = 280.460 + 0.9856474 * n;
-    L = normalizeDeg(L);
+    // Ecliptic longitude lambda (rad)
+    const lambdaRad = sunEclipticLongitudeRad(jd);
 
-    // Mean anomaly g (deg)
-    let g = 357.528 + 0.9856003 * n;
-    g = normalizeDeg(g);
-
-    const gRad = degToRad(g);
-
-    // Ecliptic longitude lambda (deg)
-    let lambda = L + 1.915 * Math.sin(gRad) + 0.020 * Math.sin(2 * gRad);
-    lambda = normalizeDeg(lambda);
-
-    // Obliquity of the ecliptic epsilon (deg)
-    const epsilon = 23.439 - 0.0000004 * n;
-
-    const lambdaRad = degToRad(lambda);
+    // Mean obliquity of the ecliptic (deg -> rad)
+    const epsilon = MEAN_OBLIQUITY.baseDeg + MEAN_OBLIQUITY.rateDegPerDay * n;
     const epsilonRad = degToRad(epsilon);
 
     const sinLambda = Math.sin(lambdaRad);
