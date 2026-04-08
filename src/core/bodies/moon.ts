@@ -10,6 +10,7 @@ export interface EclipticCoords {
 }
 
 const MOON_MEAN_LONGITUDE = { baseDeg: 218.316, rateDegPerDay: 13.176396 };
+const MOON_MEAN_ELONGATION = { baseDeg: 297.8501921, rateDegPerDay: 12.19074912 };
 const MOON_MEAN_ANOMALY = { baseDeg: 134.963, rateDegPerDay: 13.064993 };
 const SUN_MEAN_ANOMALY = { baseDeg: 357.529, rateDegPerDay: 0.98560028 };
 const MOON_ARGUMENT_OF_LATITUDE = { baseDeg: 93.272, rateDegPerDay: 13.22935 };
@@ -33,10 +34,10 @@ const MOON_LATITUDE_TERMS_DEG = {
  * Compute the Moon's approximate equatorial coordinates (RA/Dec) for a given Julian Date.
  */
 export function moonEquatorialCoordinates(jd: number): EquatorialCoords {
-    const D = getDaysSinceJ2000_5(jd);
+    const daysSinceJ2000_5 = getDaysSinceJ2000_5(jd);
     const { longitudeRad: lambdaRad, latitudeRad: betaRad } = moonEclipticCoordinates(jd);
 
-    const epsilon = MEAN_OBLIQUITY.baseDeg + MEAN_OBLIQUITY.rateDegPerDay * D;
+    const epsilon = MEAN_OBLIQUITY.baseDeg + MEAN_OBLIQUITY.rateDegPerDay * daysSinceJ2000_5;
     const epsilonRad = degToRad(epsilon);
 
     const sinLambda = Math.sin(lambdaRad);
@@ -159,23 +160,25 @@ export function lunarElongationDeg(jd: number): number {
 }
 
 export function moonEclipticCoordinates(jd: number): EclipticCoords {
-    const D = getDaysSinceJ2000_5(jd);
+    const daysSinceJ2000_5 = getDaysSinceJ2000_5(jd);
 
-    const meanLongitudeDeg = linearAngleDeg(MOON_MEAN_LONGITUDE.baseDeg, MOON_MEAN_LONGITUDE.rateDegPerDay, D);
-    const moonMeanAnomalyDeg = linearAngleDeg(MOON_MEAN_ANOMALY.baseDeg, MOON_MEAN_ANOMALY.rateDegPerDay, D);
-    const sunMeanAnomalyDeg = linearAngleDeg(SUN_MEAN_ANOMALY.baseDeg, SUN_MEAN_ANOMALY.rateDegPerDay, D);
-    const argumentOfLatitudeDeg = linearAngleDeg(MOON_ARGUMENT_OF_LATITUDE.baseDeg, MOON_ARGUMENT_OF_LATITUDE.rateDegPerDay, D);
+    const meanLongitudeDeg = linearAngleDeg(MOON_MEAN_LONGITUDE.baseDeg, MOON_MEAN_LONGITUDE.rateDegPerDay, daysSinceJ2000_5);
+    const moonMeanAnomalyDeg = linearAngleDeg(MOON_MEAN_ANOMALY.baseDeg, MOON_MEAN_ANOMALY.rateDegPerDay, daysSinceJ2000_5);
+    const sunMeanAnomalyDeg = linearAngleDeg(SUN_MEAN_ANOMALY.baseDeg, SUN_MEAN_ANOMALY.rateDegPerDay, daysSinceJ2000_5);
+    const argumentOfLatitudeDeg = linearAngleDeg(MOON_ARGUMENT_OF_LATITUDE.baseDeg, MOON_ARGUMENT_OF_LATITUDE.rateDegPerDay, daysSinceJ2000_5);
 
     const MmRad = degToRad(moonMeanAnomalyDeg);
     const MsRad = degToRad(sunMeanAnomalyDeg);
     const FRad = degToRad(argumentOfLatitudeDeg);
-    const twoD = degToRad(2 * D);
+    const meanElongationDeg = linearAngleDeg(MOON_MEAN_ELONGATION.baseDeg, MOON_MEAN_ELONGATION.rateDegPerDay, daysSinceJ2000_5);
+    const meanElongationRad = degToRad(meanElongationDeg);
+    const twoMeanElongationRad = 2 * meanElongationRad;
 
     let lambda =
         meanLongitudeDeg +
         MOON_LONGITUDE_TERMS_DEG.equationOfCenter * Math.sin(MmRad) +
-        MOON_LONGITUDE_TERMS_DEG.evection * Math.sin(twoD - MmRad) +
-        MOON_LONGITUDE_TERMS_DEG.variation * Math.sin(twoD) +
+        MOON_LONGITUDE_TERMS_DEG.evection * Math.sin(twoMeanElongationRad - MmRad) +
+        MOON_LONGITUDE_TERMS_DEG.variation * Math.sin(twoMeanElongationRad) +
         MOON_LONGITUDE_TERMS_DEG.secondHarmonic * Math.sin(2 * MmRad) +
         MOON_LONGITUDE_TERMS_DEG.annualEquation * Math.sin(MsRad);
     lambda = normalizeDeg(lambda);
@@ -184,7 +187,7 @@ export function moonEclipticCoordinates(jd: number): EclipticCoords {
         MOON_LATITUDE_TERMS_DEG.primary * Math.sin(FRad) +
         MOON_LATITUDE_TERMS_DEG.plus * Math.sin(MmRad + FRad) +
         MOON_LATITUDE_TERMS_DEG.minus * Math.sin(MmRad - FRad) +
-        MOON_LATITUDE_TERMS_DEG.evectionLike * Math.sin(twoD - FRad);
+        MOON_LATITUDE_TERMS_DEG.evectionLike * Math.sin(twoMeanElongationRad - FRad);
 
     return {
         longitudeRad: degToRad(lambda),
