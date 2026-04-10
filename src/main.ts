@@ -7,7 +7,7 @@ import { HorizonProfile } from "./core/horizon";
 import { degToRad, radToDeg, radToHours } from "./core/math";
 import { planetEquatorialCoordinates } from "./core/orbit/propagate";
 import { formatEclipseInfo, formatEoT, formatHours } from "./core/time/format";
-import { dateToJulianDate } from "./core/time/julian";
+import { dateToJulianDate, getDaysSinceJ2000 } from "./core/time/julian";
 import { localSiderealTimeHours } from "./core/time/sidereal";
 import { MoonFaceRenderer } from "./render/moonFaceRenderer";
 import { SkyRenderer, SkyRenderState } from "./render/skyRenderer";
@@ -50,6 +50,8 @@ function update(providedJd?: number) {
     const { outputs } = UI;
     const state = getObserverState();
     const jd = providedJd ?? dateToJulianDate(state.date);
+    const days_since_J2000 = getDaysSinceJ2000(jd);
+
     const latRad = degToRad(state.latDeg);
     const lstHours = localSiderealTimeHours(jd, state.lonDeg);
     const lstRad = degToRad(lstHours * 15);
@@ -64,7 +66,7 @@ function update(providedJd?: number) {
     // Sun
     let sunHoriz = null;
     if (state.bodies.sun.enabled) {
-        const sunEq = sunEquatorialCoordinates(jd);
+        const sunEq = sunEquatorialCoordinates(days_since_J2000);
         sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
         const eotHours = lmtHours - 12 - (lstHours - radToHours(sunEq.rightAscensionRad));
         const solarEclipse = getSolarEclipseCandidateInfo(jd);
@@ -80,7 +82,7 @@ function update(providedJd?: number) {
     // Moon
     let moonHoriz = null;
     if (state.bodies.moon.enabled) {
-        const moonEq = moonEquatorialCoordinates(jd);
+        const moonEq = moonEquatorialCoordinates(days_since_J2000);
         moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad, state.refractionModel);
         const phaseInfo = moonPhase(jd);
         const lunarEclipse = getLunarEclipseCandidateInfo(jd);

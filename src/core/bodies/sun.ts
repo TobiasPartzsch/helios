@@ -1,7 +1,6 @@
 import { linearAngleDeg } from "../angles";
 import type { EquatorialCoords } from "../coordinates";
 import { degToRad, normalizeDeg, normalizeRad } from "../math";
-import { getDaysSinceJ2000 } from "../time/julian";
 
 const SUN_MEAN_LONGITUDE = { baseDeg: 280.46, rateDegPerDay: 0.9856474 };
 const SUN_MEAN_ANOMALY = { baseDeg: 357.528, rateDegPerDay: 0.9856003 };
@@ -11,14 +10,20 @@ const SUN_EQUATION_OF_CENTER_DEG = {
 };
 export const MEAN_OBLIQUITY = { baseDeg: 23.439, rateDegPerDay: -0.0000004 };
 
-export function sunEclipticLongitudeRad(jd: number): number {
-    const n = getDaysSinceJ2000(jd);
-
+export function sunEclipticLongitudeRad(days_since_J2000: number): number {
     // Mean longitude L (deg)
-    const L = linearAngleDeg(SUN_MEAN_LONGITUDE.baseDeg, SUN_MEAN_LONGITUDE.rateDegPerDay, n);
+    const L = linearAngleDeg(
+        SUN_MEAN_LONGITUDE.baseDeg,
+        SUN_MEAN_LONGITUDE.rateDegPerDay,
+        days_since_J2000
+    );
 
     // Mean anomaly g (deg)
-    const g = linearAngleDeg(SUN_MEAN_ANOMALY.baseDeg, SUN_MEAN_ANOMALY.rateDegPerDay, n);
+    const g = linearAngleDeg(
+        SUN_MEAN_ANOMALY.baseDeg,
+        SUN_MEAN_ANOMALY.rateDegPerDay,
+        days_since_J2000
+    );
     const gRad = degToRad(g);
 
     let lambda =
@@ -34,14 +39,12 @@ export function sunEclipticLongitudeRad(jd: number): number {
  * Compute the Sun's apparent equatorial coordinates (RA/Dec) for a given Julian Date.
  * Low-precision but adequate for visualization.
  */
-export function sunEquatorialCoordinates(jd: number): EquatorialCoords {
-    const n = getDaysSinceJ2000(jd);
-
+export function sunEquatorialCoordinates(days_since_J2000: number): EquatorialCoords {
     // Ecliptic longitude lambda (rad)
-    const lambdaRad = sunEclipticLongitudeRad(jd);
+    const lambdaRad = sunEclipticLongitudeRad(days_since_J2000);
 
     // Mean obliquity of the ecliptic (deg -> rad)
-    const epsilon = MEAN_OBLIQUITY.baseDeg + MEAN_OBLIQUITY.rateDegPerDay * n;
+    const epsilon = MEAN_OBLIQUITY.baseDeg + MEAN_OBLIQUITY.rateDegPerDay * days_since_J2000;
     const epsilonRad = degToRad(epsilon);
 
     const sinLambda = Math.sin(lambdaRad);
