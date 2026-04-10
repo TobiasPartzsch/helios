@@ -20,9 +20,9 @@ export function dateToJulianDate(date: Date): number {
 }
 
 export function getDaysSinceJ2000(jd: number): DaysSinceJ2000 {
-    return toDaysSinceJ2000(jd - J2000_EPOCH);
+    return asDaysSinceJ2000(jd - J2000_EPOCH);
 }
 
-export function toDaysSinceJ2000(n: number): DaysSinceJ2000 {
+export function asDaysSinceJ2000(n: number): DaysSinceJ2000 {
     return n as DaysSinceJ2000;
 }
