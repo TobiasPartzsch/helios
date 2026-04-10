@@ -1,4 +1,4 @@
-import { degToRad } from "../math";
+import { degToRad } from "../angles";
 
 /**
  * Keplerian orbital elements at a given epoch, with secular rates.

@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { degToRad, radToDeg } from "./angles";
 import {
     HALF_PI,
     TWO_PI,
-    degToRad,
     hoursToRad,
     normalizeDeg,
     normalizeRad,
-    radToDeg,
     radToHours,
 } from "./math";
 

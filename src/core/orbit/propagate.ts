@@ -1,5 +1,6 @@
+import { degToRad, Radians } from "../angles";
 import type { EquatorialCoords } from "../coordinates";
-import { degToRad, normalizeRad } from "../math";
+import { normalizeRad } from "../math";
 import { J2000_EPOCH, JULIAN_CENTURY } from "../time/julian";
 import { vsop87 } from "./vsop87";
 
@@ -39,8 +40,8 @@ export function eclipticCartesianToEquatorial(
     const eqZ = y * sinEps + z * cosEps;
 
     return {
-        rightAscensionRad: normalizeRad(Math.atan2(eqY, eqX)),
-        declinationRad: Math.atan2(eqZ, Math.sqrt(eqX * eqX + eqY * eqY)),
+        rightAscensionRad: normalizeRad(Math.atan2(eqY, eqX)) as Radians,
+        declinationRad: Math.atan2(eqZ, Math.sqrt(eqX * eqX + eqY * eqY)) as Radians,
     };
 }
 

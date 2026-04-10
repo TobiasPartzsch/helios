@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { angularDifferenceDeg, degToRad, radToDeg } from "../math";
+import { degToRad, radToDeg } from "../angles";
+import { angularDifferenceDeg, } from "../math";
 import { J2000_EPOCH } from "../time";
 import { planetEquatorialReferenceCases } from "./fixtures/planet-equatorial-reference";
 import { eclipticCartesianToEquatorial, MEAN_OBLIQUITY_J2000_DEG, planetEquatorialCoordinates, sphericalToCartesian, subtractCartesian } from "./propagate";

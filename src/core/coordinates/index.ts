@@ -1,11 +1,13 @@
+import { Radians } from "../angles";
+
 export interface EquatorialCoords {
-    rightAscensionRad: number; // RA in radians
-    declinationRad: number;    // Dec in radians
+    rightAscensionRad: Radians; // RA in radians
+    declinationRad: Radians;    // Dec in radians
 }
 
 export interface HorizontalCoords {
-    azimuthRad: number;  // measured from north, increasing toward east (common convention)
-    altitudeRad: number; // height above horizon
+    azimuthRad: Radians;  // measured from north, increasing toward east (common convention)
+    altitudeRad: Radians; // height above horizon
 }
 
 export * from "./horizontal";

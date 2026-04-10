@@ -1,7 +1,8 @@
+import { degToRad, Radians } from "../core/angles";
 import { equatorialToHorizontal } from "../core/coordinates/horizontal";
 import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
-import { degToRad, HALF_PI, PI, TWO_PI } from "../core/math";
+import { HALF_PI, PI, TWO_PI } from "../core/math";
 import { DaysSinceJ2000 } from "../core/time";
 import { localSiderealTimeRad } from "../core/time/sidereal";
 
@@ -157,7 +158,7 @@ export function buildBodyTrackPath(
     lonRad: number,
     dimensions: { width: number, height: number },
     isSouthern: boolean,
-    getEqCoords: (jd: number) => { rightAscensionRad: number, declinationRad: number },
+    getEqCoords: (daysSinceJ2000: DaysSinceJ2000) => { rightAscensionRad: Radians, declinationRad: Radians },
     config: TrackConfig,
     refractionModel: RefractionModel = 'none',
 ): Path2D {

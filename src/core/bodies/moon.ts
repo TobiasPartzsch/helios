@@ -1,6 +1,7 @@
-import { linearAngleRad } from "../angles";
+import { angularSeparationRad, degToRad, linearAngleRad, Radians, radToDeg } from "../angles";
 import type { EquatorialCoords } from "../coordinates";
-import { angularSeparationRad, degToRad, normalizeRad, PI, radToDeg, signedAngularDifferenceRad } from "../math";
+import { normalizeRad, PI, signedAngularDifferenceRad } from "../math";
+import { DaysSinceJ2000 } from "../time";
 import { MEAN_OBLIQUITY, sunEclipticLongitudeRad, sunEquatorialCoordinates } from "./sun";
 
 export interface EclipticCoords {
@@ -47,7 +48,7 @@ const MOON_LATITUDE_TERMS_RAD = {
 /**
  * Compute the Moon's approximate equatorial coordinates (RA/Dec) for a given Julian Date.
  */
-export function moonEquatorialCoordinates(daysSinceJ2000: number): EquatorialCoords {
+export function moonEquatorialCoordinates(daysSinceJ2000: DaysSinceJ2000): EquatorialCoords {
     const { longitudeRad: lambdaRad, latitudeRad: betaRad } = moonEclipticCoordinates(daysSinceJ2000);
 
     const epsilonRad = MEAN_OBLIQUITY.baseRad + MEAN_OBLIQUITY.rateRadPerDay * daysSinceJ2000;
@@ -63,8 +64,8 @@ export function moonEquatorialCoordinates(daysSinceJ2000: number): EquatorialCoo
     const Y = cosBeta * sinLambda * cosEps - sinBeta * sinEps;
     const Z = cosBeta * sinLambda * sinEps + sinBeta * cosEps;
 
-    const rightAscensionRad = normalizeRad(Math.atan2(Y, X));
-    const declinationRad = Math.asin(Z);
+    const rightAscensionRad = normalizeRad(Math.atan2(Y, X)) as Radians;
+    const declinationRad = Math.asin(Z) as Radians;
 
     return { rightAscensionRad, declinationRad };
 }
@@ -86,7 +87,7 @@ export interface MoonPhaseInfo {
 /**
  * Compute approximate Moon phase for a given Julian Date.
  */
-export function moonPhase(daysSinceJ2000: number): MoonPhaseInfo {
+export function moonPhase(daysSinceJ2000: DaysSinceJ2000): MoonPhaseInfo {
     // Moon ecliptic longitude from our model
     const { longitudeRad: lambdaMoonRad } = moonEclipticCoordinates(daysSinceJ2000);
     const lambdaSunRad = sunEclipticLongitudeRad(daysSinceJ2000);
@@ -155,7 +156,7 @@ export function calculateIllumination(
     return (1 + Math.cos(phaseAngle)) / 2;
 }
 
-export function moonSunAngularSeparationRad(daysSinceJ2000: number): number {
+export function moonSunAngularSeparationRad(daysSinceJ2000: DaysSinceJ2000): number {
     const moonEq = moonEquatorialCoordinates(daysSinceJ2000);
     const sunEq = sunEquatorialCoordinates(daysSinceJ2000);
 
@@ -167,12 +168,12 @@ export function moonSunAngularSeparationRad(daysSinceJ2000: number): number {
     );
 }
 
-export function lunarElongationDeg(daysSinceJ2000: number): number {
+export function lunarElongationDeg(daysSinceJ2000: DaysSinceJ2000): number {
     return radToDeg(moonSunAngularSeparationRad(daysSinceJ2000));
 }
 
-export function moonEclipticCoordinates(daysSinceJ2000: number): EclipticCoords {
-    const daysSinceJ2000_5 = daysSinceJ2000 - 0.5;
+export function moonEclipticCoordinates(daysSinceJ2000: DaysSinceJ2000): EclipticCoords {
+    const daysSinceJ2000_5 = daysSinceJ2000 - 0.5 as DaysSinceJ2000;
 
     const moonMeanLongitudeRad = linearAngleRad(
         MOON_MEAN_LONGITUDE.baseRad,
@@ -225,12 +226,12 @@ export function moonEclipticCoordinates(daysSinceJ2000: number): EclipticCoords 
     };
 }
 
-export function moonSunEclipticLongitudeDifferenceRad(daysSinceJ2000: number): number {
+export function moonSunEclipticLongitudeDifferenceRad(daysSinceJ2000: DaysSinceJ2000): Radians {
     const moon = moonEclipticCoordinates(daysSinceJ2000);
     const sunLongitudeRad = sunEclipticLongitudeRad(daysSinceJ2000);
-    return signedAngularDifferenceRad(moon.longitudeRad, sunLongitudeRad);
+    return signedAngularDifferenceRad(moon.longitudeRad, sunLongitudeRad) as Radians;
 }
 
-export function moonEclipticLatitudeRad(daysSinceJ2000: number): number {
-    return moonEclipticCoordinates(daysSinceJ2000).latitudeRad;
+export function moonEclipticLatitudeRad(daysSinceJ2000: DaysSinceJ2000): Radians {
+    return moonEclipticCoordinates(daysSinceJ2000).latitudeRad as Radians;
 }

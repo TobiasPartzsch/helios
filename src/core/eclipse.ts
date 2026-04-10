@@ -1,8 +1,9 @@
+import { radToDeg } from "./angles";
 import {
     moonEclipticLatitudeRad,
     moonSunEclipticLongitudeDifferenceRad,
 } from "./bodies/moon";
-import { radToDeg } from "./math";
+import { DaysSinceJ2000 } from "./time";
 
 export interface EclipseCandidateInfo {
     isCandidate: boolean;
@@ -16,7 +17,7 @@ const ECLIPSE_LIMITS = {
     maxEclipticLatitudeDeg: 1.5,
 };
 
-export function getSolarEclipseCandidateInfo(daysSinceJ2000: number): EclipseCandidateInfo {
+export function getSolarEclipseCandidateInfo(daysSinceJ2000: DaysSinceJ2000): EclipseCandidateInfo {
     const longitudeErrorDeg = Math.abs(
         radToDeg(moonSunEclipticLongitudeDifferenceRad(daysSinceJ2000)),
     );
@@ -31,7 +32,7 @@ export function getSolarEclipseCandidateInfo(daysSinceJ2000: number): EclipseCan
     };
 }
 
-export function getLunarEclipseCandidateInfo(daysSinceJ2000: number): EclipseCandidateInfo {
+export function getLunarEclipseCandidateInfo(daysSinceJ2000: DaysSinceJ2000): EclipseCandidateInfo {
     const longitudeDifferenceDeg = Math.abs(
         radToDeg(moonSunEclipticLongitudeDifferenceRad(daysSinceJ2000)),
     );
@@ -47,10 +48,10 @@ export function getLunarEclipseCandidateInfo(daysSinceJ2000: number): EclipseCan
     };
 }
 
-export function isSolarEclipseCandidate(jd: number): boolean {
-    return getSolarEclipseCandidateInfo(jd).isCandidate;
+export function isSolarEclipseCandidate(daysSinceJ2000: DaysSinceJ2000): boolean {
+    return getSolarEclipseCandidateInfo(daysSinceJ2000).isCandidate;
 }
 
-export function isLunarEclipseCandidate(jd: number): boolean {
-    return getLunarEclipseCandidateInfo(jd).isCandidate;
+export function isLunarEclipseCandidate(daysSinceJ2000: DaysSinceJ2000): boolean {
+    return getLunarEclipseCandidateInfo(daysSinceJ2000).isCandidate;
 }

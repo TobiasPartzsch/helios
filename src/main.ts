@@ -1,10 +1,11 @@
+import { degToRad, Radians, radToDeg } from "./core/angles";
 import { moonEquatorialCoordinates, moonPhase } from "./core/bodies/moon";
 import { sunEquatorialCoordinates } from "./core/bodies/sun";
 import type { EquatorialCoords, HorizontalCoords } from "./core/coordinates";
 import { equatorialToHorizontal } from "./core/coordinates";
 import { getLunarEclipseCandidateInfo, getSolarEclipseCandidateInfo } from "./core/eclipse";
 import { HorizonProfile } from "./core/horizon";
-import { degToRad, normalizeRad, radToDeg, radToHours } from "./core/math";
+import { normalizeRad, radToHours } from "./core/math";
 import { planetEquatorialCoordinates } from "./core/orbit/propagate";
 import { formatEclipseInfo, formatEoT, formatHours } from "./core/time/format";
 import { dateToJulianDate, getDaysSinceJ2000 } from "./core/time/julian";
@@ -97,7 +98,7 @@ function update(providedJd?: number) {
         outputs.phase.innerText = `${phaseInfo.phaseName} (${(phaseInfo.illuminatedFraction * 100).toFixed(1)}%)`;
         moonFaceRenderer.render({
             illuminatedFraction: phaseInfo.illuminatedFraction,
-            sunHoriz: sunHoriz ?? { altitudeRad: 0, azimuthRad: 0 },
+            sunHoriz: sunHoriz ?? { altitudeRad: 0 as Radians, azimuthRad: 0 as Radians },
             moonHoriz,
         });
     }

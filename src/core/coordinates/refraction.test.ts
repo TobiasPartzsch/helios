@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { degToRad } from "../math";
+import { degToRad } from "../angles";
 import { applyRefraction } from "./refraction";
 
 describe("coordinates: applyRefraction", () => {

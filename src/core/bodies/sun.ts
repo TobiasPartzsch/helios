@@ -1,6 +1,7 @@
-import { linearAngleRad } from "../angles";
+import { asRad, degToRad, linearAngleRad, Radians } from "../angles";
 import type { EquatorialCoords } from "../coordinates";
-import { degToRad, normalizeRad } from "../math";
+import { normalizeRad } from "../math";
+import { DaysSinceJ2000 } from "../time";
 
 const SUN_MEAN_LONGITUDE = {
     baseRad: degToRad(280.46),
@@ -19,7 +20,7 @@ export const MEAN_OBLIQUITY = {
     rateRadPerDay: degToRad(-0.0000004),
 };
 
-export function sunEclipticLongitudeRad(daysSinceJ2000: number): number {
+export function sunEclipticLongitudeRad(daysSinceJ2000: DaysSinceJ2000): Radians {
     // Mean longitude L (rad)
     const L = linearAngleRad(
         SUN_MEAN_LONGITUDE.baseRad,
@@ -39,14 +40,14 @@ export function sunEclipticLongitudeRad(daysSinceJ2000: number): number {
         SUN_EQUATION_OF_CENTER_RAD.firstOrder * Math.sin(gRad) +
         SUN_EQUATION_OF_CENTER_RAD.secondOrder * Math.sin(2 * gRad);
 
-    return normalizeRad(lambda);
+    return asRad(normalizeRad(lambda));
 }
 
 /**
  * Compute the Sun's apparent equatorial coordinates (RA/Dec) for a given Julian Date.
  * Low-precision but adequate for visualization.
  */
-export function sunEquatorialCoordinates(daysSinceJ2000: number): EquatorialCoords {
+export function sunEquatorialCoordinates(daysSinceJ2000: DaysSinceJ2000): EquatorialCoords {
     // Ecliptic longitude lambda (rad)
     const lambdaRad = sunEclipticLongitudeRad(daysSinceJ2000);
 
@@ -59,8 +60,8 @@ export function sunEquatorialCoordinates(daysSinceJ2000: number): EquatorialCoor
     const cosEps = Math.cos(epsilonRad);
 
     // Equatorial coordinates
-    const rightAscensionRad = normalizeRad(Math.atan2(cosEps * sinLambda, cosLambda));
-    const declinationRad = Math.asin(sinEps * sinLambda);
+    const rightAscensionRad = normalizeRad(Math.atan2(cosEps * sinLambda, cosLambda)) as Radians;
+    const declinationRad = Math.asin(sinEps * sinLambda) as Radians;
 
     return { rightAscensionRad, declinationRad };
 }

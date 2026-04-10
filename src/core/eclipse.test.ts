@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { radToDeg } from "./angles";
 import { moonEclipticLatitudeRad, moonSunEclipticLongitudeDifferenceRad } from "./bodies/moon";
 import { isLunarEclipseCandidate, isSolarEclipseCandidate } from "./eclipse";
-import { radToDeg } from "./math";
-import { getDaysSinceJ2000 } from "./time";
+import { asDaysSinceJ2000, DaysSinceJ2000, getDaysSinceJ2000 } from "./time";
 
 describe("eclipse candidates", () => {
     it("detects a solar eclipse candidate near 2024-04-08", () => {
@@ -40,8 +40,8 @@ describe("eclipse candidates", () => {
 });
 
 function hasCandidateNear(
-    predicate: (jd: number) => boolean,
-    centerJd: number,
+    predicate: (daysSinceJ2000: DaysSinceJ2000) => boolean,
+    centerDays: number,
     windowHours: number,
     stepMinutes: number,
 ): boolean {
@@ -53,7 +53,8 @@ function hasCandidateNear(
         offsetDays <= halfWindowDays;
         offsetDays += stepDays
     ) {
-        if (predicate(centerJd + offsetDays)) {
+        const sampleDays = asDaysSinceJ2000(centerDays + offsetDays);
+        if (predicate(sampleDays)) {
             return true;
         }
     }

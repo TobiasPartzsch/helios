@@ -1,3 +1,4 @@
+import { Radians } from "../angles";
 import { normalizeRad } from "../math";
 import type { EquatorialCoords, HorizontalCoords } from "./index";
 import { applyRefraction, RefractionModel } from "./refraction";
@@ -30,7 +31,7 @@ export function equatorialToHorizontal(
 
     // Altitude
     const sinAlt = sinDec * sinLat + cosDec * cosLat * cosH;
-    const altitudeRad = Math.asin(sinAlt);
+    const altitudeRad = Math.asin(sinAlt) as Radians;
 
     // Stable Azimuth using atan2(y, x)
     // y = sin(H)
@@ -39,10 +40,10 @@ export function equatorialToHorizontal(
     const y = -cosDec * sinH;
     const x = cosLat * sinDec - sinLat * cosDec * cosH;
 
-    let azimuthRad = Math.atan2(y, x);
+    let azimuthRad = Math.atan2(y, x) as Radians;
 
     // Normalize to [0, 2π)
-    azimuthRad = normalizeRad(azimuthRad);
+    azimuthRad = normalizeRad(azimuthRad) as Radians;
 
     return {
         azimuthRad,
