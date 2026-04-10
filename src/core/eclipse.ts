@@ -16,11 +16,11 @@ const ECLIPSE_LIMITS = {
     maxEclipticLatitudeDeg: 1.5,
 };
 
-export function getSolarEclipseCandidateInfo(jd: number): EclipseCandidateInfo {
+export function getSolarEclipseCandidateInfo(daysSinceJ2000: number): EclipseCandidateInfo {
     const longitudeErrorDeg = Math.abs(
-        radToDeg(moonSunEclipticLongitudeDifferenceRad(jd)),
+        radToDeg(moonSunEclipticLongitudeDifferenceRad(daysSinceJ2000)),
     );
-    const eclipticLatitudeDeg = Math.abs(radToDeg(moonEclipticLatitudeRad(jd)));
+    const eclipticLatitudeDeg = Math.abs(radToDeg(moonEclipticLatitudeRad(daysSinceJ2000)));
 
     return {
         isCandidate:
@@ -31,12 +31,12 @@ export function getSolarEclipseCandidateInfo(jd: number): EclipseCandidateInfo {
     };
 }
 
-export function getLunarEclipseCandidateInfo(jd: number): EclipseCandidateInfo {
+export function getLunarEclipseCandidateInfo(daysSinceJ2000: number): EclipseCandidateInfo {
     const longitudeDifferenceDeg = Math.abs(
-        radToDeg(moonSunEclipticLongitudeDifferenceRad(jd)),
+        radToDeg(moonSunEclipticLongitudeDifferenceRad(daysSinceJ2000)),
     );
     const oppositionErrorDeg = Math.abs(180 - longitudeDifferenceDeg);
-    const eclipticLatitudeDeg = Math.abs(radToDeg(moonEclipticLatitudeRad(jd)));
+    const eclipticLatitudeDeg = Math.abs(radToDeg(moonEclipticLatitudeRad(daysSinceJ2000)));
 
     return {
         isCandidate:

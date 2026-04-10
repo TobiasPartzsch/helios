@@ -1,3 +1,5 @@
+import { normalizeRad } from "../math";
+
 export function julianDateToGMSTHours(jd: number): number {
     const jd0 = Math.floor(jd + 0.5) - 0.5;
     const H = (jd - jd0) * 24;
@@ -20,11 +22,19 @@ export function longitudeDegToSiderealHours(longitudeDeg: number): number {
     return longitudeDeg / 15.0;
 }
 
-export function localSiderealTimeHours(jd: number, longitudeDeg: number): number {
-    const gmst = julianDateToGMSTHours(jd);
-    const longHours = longitudeDegToSiderealHours(longitudeDeg);
+/**
+ * Compute Local Sidereal Time in Radians.
+ * @param daysSinceJ2000 Days since 2000-01-01 12:00:00 UTC
+ * @param longitudeRad Observer's longitude in radians (East positive)
+ */
+export function localSiderealTimeRad(daysSinceJ2000: number, longitudeRad: number): number {
+    // GMST at J2000 was approx 18.697 hours. In radians:
+    const gmstBaseRad = 4.894961212735792;
+    // The Earth rotates approx 1.0027379 times per solar day
+    const rotationRateRadPerDay = 6.30038809898489;
 
-    let lst = gmst + longHours;
-    lst = ((lst % 24) + 24) % 24;
-    return lst;
+    const gmstRad = gmstBaseRad + rotationRateRadPerDay * daysSinceJ2000;
+
+    // LST = GMST + Longitude
+    return normalizeRad(gmstRad + longitudeRad);
 }

@@ -1,6 +1,8 @@
 /**
  * Standard J2000.0 Epoch (January 1, 2000, 12:00 UTC)
  */
+export type DaysSinceJ2000 = number & { __brand: "DaysSinceJ2000" };
+
 export const J2000_EPOCH = 2451545.0;
 export const JULIAN_CENTURY = 36525.0;
 
@@ -17,10 +19,10 @@ export function dateToJulianDate(date: Date): number {
     return JD_UNIX_EPOCH + time / msPerDay;
 }
 
-export function getDaysSinceJ2000(jd: number): number {
-    return jd - J2000_EPOCH;
+export function getDaysSinceJ2000(jd: number): DaysSinceJ2000 {
+    return toDaysSinceJ2000(jd - J2000_EPOCH);
 }
 
-export function getDaysSinceJ2000_5(jd: number): number {
-    return jd - J2000_5_EPOCH;
+export function toDaysSinceJ2000(n: number): DaysSinceJ2000 {
+    return n as DaysSinceJ2000;
 }

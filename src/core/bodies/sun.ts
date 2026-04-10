@@ -19,19 +19,19 @@ export const MEAN_OBLIQUITY = {
     rateRadPerDay: degToRad(-0.0000004),
 };
 
-export function sunEclipticLongitudeRad(days_since_J2000: number): number {
+export function sunEclipticLongitudeRad(daysSinceJ2000: number): number {
     // Mean longitude L (rad)
     const L = linearAngleRad(
         SUN_MEAN_LONGITUDE.baseRad,
         SUN_MEAN_LONGITUDE.rateRadPerDay,
-        days_since_J2000
+        daysSinceJ2000
     );
 
     // Mean anomaly g (rad)
     const gRad = linearAngleRad(
         SUN_MEAN_ANOMALY.baseRad,
         SUN_MEAN_ANOMALY.rateRadPerDay,
-        days_since_J2000
+        daysSinceJ2000
     );
 
     let lambda =
@@ -46,12 +46,12 @@ export function sunEclipticLongitudeRad(days_since_J2000: number): number {
  * Compute the Sun's apparent equatorial coordinates (RA/Dec) for a given Julian Date.
  * Low-precision but adequate for visualization.
  */
-export function sunEquatorialCoordinates(days_since_J2000: number): EquatorialCoords {
+export function sunEquatorialCoordinates(daysSinceJ2000: number): EquatorialCoords {
     // Ecliptic longitude lambda (rad)
-    const lambdaRad = sunEclipticLongitudeRad(days_since_J2000);
+    const lambdaRad = sunEclipticLongitudeRad(daysSinceJ2000);
 
     // Mean obliquity of the ecliptic (rad)
-    const epsilonRad = MEAN_OBLIQUITY.baseRad + MEAN_OBLIQUITY.rateRadPerDay * days_since_J2000;
+    const epsilonRad = MEAN_OBLIQUITY.baseRad + MEAN_OBLIQUITY.rateRadPerDay * daysSinceJ2000;
 
     const sinLambda = Math.sin(lambdaRad);
     const cosLambda = Math.cos(lambdaRad);

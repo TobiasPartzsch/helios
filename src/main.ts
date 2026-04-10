@@ -4,11 +4,11 @@ import type { EquatorialCoords, HorizontalCoords } from "./core/coordinates";
 import { equatorialToHorizontal } from "./core/coordinates";
 import { getLunarEclipseCandidateInfo, getSolarEclipseCandidateInfo } from "./core/eclipse";
 import { HorizonProfile } from "./core/horizon";
-import { degToRad, radToDeg, radToHours } from "./core/math";
+import { degToRad, normalizeRad, radToDeg, radToHours } from "./core/math";
 import { planetEquatorialCoordinates } from "./core/orbit/propagate";
 import { formatEclipseInfo, formatEoT, formatHours } from "./core/time/format";
 import { dateToJulianDate, getDaysSinceJ2000 } from "./core/time/julian";
-import { localSiderealTimeHours } from "./core/time/sidereal";
+import { localSiderealTimeRad } from "./core/time/sidereal";
 import { MoonFaceRenderer } from "./render/moonFaceRenderer";
 import { SkyRenderer, SkyRenderState } from "./render/skyRenderer";
 import "./style.css";
@@ -50,11 +50,11 @@ function update(providedJd?: number) {
     const { outputs } = UI;
     const state = getObserverState();
     const jd = providedJd ?? dateToJulianDate(state.date);
-    const days_since_J2000 = getDaysSinceJ2000(jd);
+    const daysSinceJ2000 = getDaysSinceJ2000(providedJd ?? dateToJulianDate(state.date));
 
     const latRad = degToRad(state.latDeg);
-    const lstHours = localSiderealTimeHours(jd, state.lonDeg);
-    const lstRad = degToRad(lstHours * 15);
+    const lonRad = degToRad(state.lonDeg)
+    const lstRad = localSiderealTimeRad(daysSinceJ2000, lonRad);
 
     // Telemetry
     const utcHours =
@@ -66,15 +66,18 @@ function update(providedJd?: number) {
     // Sun
     let sunHoriz = null;
     if (state.bodies.sun.enabled) {
-        const sunEq = sunEquatorialCoordinates(days_since_J2000);
+        const sunEq = sunEquatorialCoordinates(daysSinceJ2000);
         sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
-        const eotHours = lmtHours - 12 - (lstHours - radToHours(sunEq.rightAscensionRad));
-        const solarEclipse = getSolarEclipseCandidateInfo(jd);
+        const sunHourAngleRad = normalizeRad(lstRad - sunEq.rightAscensionRad);
+
+        const solarEclipse = getSolarEclipseCandidateInfo(daysSinceJ2000);
 
         outputs.sun.innerText = solarEclipse.isCandidate
             ? `${formatAltAz(sunHoriz)} | ${formatEclipseInfo("Solar cand.", solarEclipse.longitudeErrorDeg, solarEclipse.eclipticLatitudeDeg)}`
             : formatAltAz(sunHoriz);
         outputs.sun.title = formatRaDec(sunEq);
+
+        const eotHours = lmtHours - 12 - (radToHours(sunHourAngleRad));
         outputs.eot.innerText = formatEoT(eotHours);
 
     }
@@ -82,10 +85,10 @@ function update(providedJd?: number) {
     // Moon
     let moonHoriz = null;
     if (state.bodies.moon.enabled) {
-        const moonEq = moonEquatorialCoordinates(days_since_J2000);
+        const moonEq = moonEquatorialCoordinates(daysSinceJ2000);
         moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad, state.refractionModel);
-        const phaseInfo = moonPhase(jd);
-        const lunarEclipse = getLunarEclipseCandidateInfo(jd);
+        const phaseInfo = moonPhase(daysSinceJ2000);
+        const lunarEclipse = getLunarEclipseCandidateInfo(daysSinceJ2000);
 
         outputs.moon.innerText = lunarEclipse.isCandidate
             ? `${formatAltAz(moonHoriz)} | ${formatEclipseInfo("Lunar cand.", lunarEclipse.longitudeErrorDeg, lunarEclipse.eclipticLatitudeDeg)}`
@@ -103,7 +106,7 @@ function update(providedJd?: number) {
     const planetHorizMap: Partial<Record<BodyName, HorizontalCoords>> = {};
     for (const name of PLANET_NAMES) {
         if (state.bodies[name].enabled) {
-            const eq = planetEquatorialCoordinates(name, jd);
+            const eq = planetEquatorialCoordinates(name, daysSinceJ2000);
             const horiz = equatorialToHorizontal(eq, latRad, lstRad, state.refractionModel);
             planetHorizMap[name] = horiz;
             const out = outputs[name as keyof typeof outputs] as HTMLElement;
@@ -115,13 +118,13 @@ function update(providedJd?: number) {
     applyEasterEgg(state.date);
 
     // Time telemetry
-    outputs.lst.innerText = formatHours(lstHours);
+    outputs.lst.innerText = formatHours(radToHours(lstRad));
     outputs.lmt.innerText = formatHours(lmtHours);
     outputs.jd.innerText = jd.toFixed(5);
 
     // Render
     const renderState: SkyRenderState = {
-        jd, latRad, lonDeg: state.lonDeg,
+        daysSinceJ2000, latRad, lonRad,
         sunHoriz: sunHoriz ?? undefined,
         moonHoriz: moonHoriz ?? undefined,
         planetHorizMap,

@@ -1,8 +1,9 @@
 import { equatorialToHorizontal } from "../core/coordinates/horizontal";
 import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
-import { degToRad, HALF_PI, hoursToRad, PI, TWO_PI } from "../core/math";
-import { localSiderealTimeHours } from "../core/time/sidereal";
+import { degToRad, HALF_PI, PI, TWO_PI } from "../core/math";
+import { DaysSinceJ2000 } from "../core/time";
+import { localSiderealTimeRad } from "../core/time/sidereal";
 
 export interface CanvasDimensions {
     width: number;
@@ -151,27 +152,28 @@ function getCardinalLabel(az: number): string | null {
  * Draws a path for a body across a 24-hour window centered on current JD.
  */
 export function buildBodyTrackPath(
-    jd: number,
+    daysSinceJ2000: DaysSinceJ2000,
     latRad: number,
-    lonDeg: number,
+    lonRad: number,
     dimensions: { width: number, height: number },
     isSouthern: boolean,
     getEqCoords: (jd: number) => { rightAscensionRad: number, declinationRad: number },
     config: TrackConfig,
     refractionModel: RefractionModel = 'none',
 ): Path2D {
-    const { windowDays } = config;
-    const steps = Math.floor(windowDays / config.sampleIntervalDays);
-    const stepInDays = config.sampleIntervalDays;
+    const { windowDays, sampleIntervalDays: stepInDays } = config;
+    const steps = Math.floor(windowDays / stepInDays);
 
     const path = new Path2D();
     let lastShiftedAz: number | null = null;
 
+    const startDays = daysSinceJ2000 - windowDays / 2;
+
     for (let i = 0; i <= steps; i++) {
-        const sampleJd = (jd - windowDays / 2) + (i * stepInDays);
+        const sampleDays = (startDays + (i * stepInDays)) as DaysSinceJ2000;
         try {
-            const eq = getEqCoords(sampleJd);
-            const lstRad = hoursToRad(localSiderealTimeHours(sampleJd, lonDeg));
+            const eq = getEqCoords(sampleDays);
+            const lstRad = localSiderealTimeRad(sampleDays, lonRad);
             const horiz = equatorialToHorizontal(eq, latRad, lstRad, refractionModel);
 
             const centerOffset = isSouthern ? 0 : PI;
@@ -193,7 +195,7 @@ export function buildBodyTrackPath(
                 path.lineTo(pos.x, pos.y);
             }
         } catch (error) {
-            console.log(`error at i=${i}, jd=${sampleJd.toFixed(1)}:`, error);
+            console.log(`error at i=${i}, jd=${sampleDays.toFixed(1)}:`, error);
         }
     }
 

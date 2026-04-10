@@ -86,10 +86,10 @@ export interface MoonPhaseInfo {
 /**
  * Compute approximate Moon phase for a given Julian Date.
  */
-export function moonPhase(days_since_J2000: number): MoonPhaseInfo {
+export function moonPhase(daysSinceJ2000: number): MoonPhaseInfo {
     // Moon ecliptic longitude from our model
-    const { longitudeRad: lambdaMoonRad } = moonEclipticCoordinates(days_since_J2000);
-    const lambdaSunRad = sunEclipticLongitudeRad(days_since_J2000);
+    const { longitudeRad: lambdaMoonRad } = moonEclipticCoordinates(daysSinceJ2000);
+    const lambdaSunRad = sunEclipticLongitudeRad(daysSinceJ2000);
 
     // Elongation between Moon and Sun
     const delta = normalizeRad(lambdaMoonRad - lambdaSunRad);
@@ -155,9 +155,9 @@ export function calculateIllumination(
     return (1 + Math.cos(phaseAngle)) / 2;
 }
 
-export function moonSunAngularSeparationRad(days_since_J2000: number): number {
-    const moonEq = moonEquatorialCoordinates(days_since_J2000);
-    const sunEq = sunEquatorialCoordinates(days_since_J2000);
+export function moonSunAngularSeparationRad(daysSinceJ2000: number): number {
+    const moonEq = moonEquatorialCoordinates(daysSinceJ2000);
+    const sunEq = sunEquatorialCoordinates(daysSinceJ2000);
 
     return angularSeparationRad(
         moonEq.rightAscensionRad,
@@ -167,8 +167,8 @@ export function moonSunAngularSeparationRad(days_since_J2000: number): number {
     );
 }
 
-export function lunarElongationDeg(days_since_J2000: number): number {
-    return radToDeg(moonSunAngularSeparationRad(days_since_J2000));
+export function lunarElongationDeg(daysSinceJ2000: number): number {
+    return radToDeg(moonSunAngularSeparationRad(daysSinceJ2000));
 }
 
 export function moonEclipticCoordinates(daysSinceJ2000: number): EclipticCoords {
@@ -225,12 +225,12 @@ export function moonEclipticCoordinates(daysSinceJ2000: number): EclipticCoords 
     };
 }
 
-export function moonSunEclipticLongitudeDifferenceRad(days_since_J2000: number): number {
-    const moon = moonEclipticCoordinates(days_since_J2000);
-    const sunLongitudeRad = sunEclipticLongitudeRad(days_since_J2000);
+export function moonSunEclipticLongitudeDifferenceRad(daysSinceJ2000: number): number {
+    const moon = moonEclipticCoordinates(daysSinceJ2000);
+    const sunLongitudeRad = sunEclipticLongitudeRad(daysSinceJ2000);
     return signedAngularDifferenceRad(moon.longitudeRad, sunLongitudeRad);
 }
 
-export function moonEclipticLatitudeRad(days_since_J2000: number): number {
-    return moonEclipticCoordinates(days_since_J2000).latitudeRad;
+export function moonEclipticLatitudeRad(daysSinceJ2000: number): number {
+    return moonEclipticCoordinates(daysSinceJ2000).latitudeRad;
 }

@@ -3,6 +3,7 @@ import { sunEquatorialCoordinates } from "../core/bodies/sun";
 import { HorizontalCoords } from "../core/coordinates";
 import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
+import { DaysSinceJ2000 } from "../core/time";
 import { BodyConfig, BodyName } from "../ui/elements";
 import {
     buildBodyTrackPath,
@@ -32,9 +33,9 @@ const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
 
 
 export interface SkyRenderState {
-    jd: number;
+    daysSinceJ2000: DaysSinceJ2000;
     latRad: number;
-    lonDeg: number;
+    lonRad: number;
     sunHoriz?: HorizontalCoords;
     moonHoriz?: HorizontalCoords;
     planetHorizMap: Partial<Record<BodyName, HorizontalCoords>>;
@@ -47,7 +48,7 @@ export interface SkyRenderState {
 export class SkyRenderer {
     private ctx: CanvasRenderingContext2D;
     private trackCache: Map<string, Path2D> = new Map();
-    private lastTrackJd: number = NaN;
+    private lastTrackDays: number = NaN;
     private readonly TRACK_RECOMPUTE_THRESHOLD = 1 / 24; // 1 hour
     private lastDims: { width: number; height: number } = { width: 0, height: 0 };
 
@@ -73,8 +74,8 @@ export class SkyRenderer {
 
     render(
         {
-            jd,
-            latRad, lonDeg,
+            daysSinceJ2000,
+            latRad, lonRad,
             sunHoriz, moonHoriz, planetHorizMap,
             bodies,
             horizonProfile,
@@ -88,11 +89,11 @@ export class SkyRenderer {
         const canvas = ctx.canvas;
 
         const dimsChanged = dims.width !== this.lastDims.width || dims.height !== this.lastDims.height;
-        const needsRecompute = dimsChanged || Math.abs(jd - this.lastTrackJd) > this.TRACK_RECOMPUTE_THRESHOLD;
+        const needsRecompute = dimsChanged || Math.abs(daysSinceJ2000 - this.lastTrackDays) > this.TRACK_RECOMPUTE_THRESHOLD;
 
         if (needsRecompute) {
             this.trackCache.clear();
-            this.lastTrackJd = jd;
+            this.lastTrackDays = daysSinceJ2000;
             this.lastDims = { ...dims };
         }
 
@@ -114,7 +115,7 @@ export class SkyRenderer {
         if (bodies.sun.enabled && bodies.sun.visible) {
             if (!this.trackCache.has("sun")) {
                 this.trackCache.set("sun", buildBodyTrackPath(
-                    jd, latRad, lonDeg, dims, isSouthern,
+                    daysSinceJ2000, latRad, lonRad, dims, isSouthern,
                     sunEquatorialCoordinates, BODY_TRACKS.sun!, refractionModel
                 ));
             }
@@ -124,7 +125,7 @@ export class SkyRenderer {
         if (bodies.moon.enabled && bodies.moon.visible) {
             if (!this.trackCache.has("moon")) {
                 this.trackCache.set("moon", buildBodyTrackPath(
-                    jd, latRad, lonDeg, dims, isSouthern,
+                    daysSinceJ2000, latRad, lonRad, dims, isSouthern,
                     moonEquatorialCoordinates, BODY_TRACKS.moon!, refractionModel
                 ));
             }
