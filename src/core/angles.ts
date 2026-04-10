@@ -1,5 +1,5 @@
-import { normalizeDeg } from "./math";
+import { normalizeRad } from "./math";
 
-export function linearAngleDeg(baseDeg: number, rateDegPerDay: number, days: number): number {
-    return normalizeDeg(baseDeg + rateDegPerDay * days);
+export function linearAngleRad(baseRad: number, rateRadPerDay: number, days: number): number {
+    return normalizeRad(baseRad + rateRadPerDay * days);
 }

@@ -1,6 +1,6 @@
-import { linearAngleDeg } from "../angles";
+import { linearAngleRad } from "../angles";
 import type { EquatorialCoords } from "../coordinates";
-import { angularSeparationRad, degToRad, normalizeDeg, normalizeRad, PI, radToDeg, signedAngularDifferenceRad } from "../math";
+import { angularSeparationRad, degToRad, normalizeRad, PI, radToDeg, signedAngularDifferenceRad } from "../math";
 import { MEAN_OBLIQUITY, sunEclipticLongitudeRad, sunEquatorialCoordinates } from "./sun";
 
 export interface EclipticCoords {
@@ -8,25 +8,40 @@ export interface EclipticCoords {
     latitudeRad: number;
 }
 
-const MOON_MEAN_LONGITUDE = { baseDeg: 218.316, rateDegPerDay: 13.176396 };
-const MOON_MEAN_ELONGATION = { baseDeg: 297.8501921, rateDegPerDay: 12.19074912 };
-const MOON_MEAN_ANOMALY = { baseDeg: 134.963, rateDegPerDay: 13.064993 };
-const SUN_MEAN_ANOMALY = { baseDeg: 357.529, rateDegPerDay: 0.98560028 };
-const MOON_ARGUMENT_OF_LATITUDE = { baseDeg: 93.272, rateDegPerDay: 13.22935 };
-
-const MOON_LONGITUDE_TERMS_DEG = {
-    evection: 1.274,
-    variation: 0.658,
-    annualEquation: -0.186,
-    equationOfCenter: 6.289,
-    secondHarmonic: 0.214,
+const MOON_MEAN_LONGITUDE = {
+    baseRad: degToRad(218.316),
+    rateRadPerDay: degToRad(13.176396),
+};
+const MOON_MEAN_ELONGATION = {
+    baseRad: degToRad(297.8501921),
+    rateRadPerDay: degToRad(12.19074912),
+};
+const MOON_MEAN_ANOMALY = {
+    baseRad: degToRad(134.963),
+    rateRadPerDay: degToRad(13.064993),
+};
+const SUN_MEAN_ANOMALY = {
+    baseRad: degToRad(357.529),
+    rateRadPerDay: degToRad(0.98560028)
+};
+const MOON_ARGUMENT_OF_LATITUDE = {
+    baseRad: degToRad(93.272),
+    rateRadPerDay: degToRad(13.22935),
 };
 
-const MOON_LATITUDE_TERMS_DEG = {
-    primary: 5.128,
-    plus: 0.280,
-    minus: 0.277,
-    evectionLike: 0.173,
+const MOON_LONGITUDE_TERMS_RAD = {
+    evection: degToRad(1.274),
+    variation: degToRad(0.658),
+    annualEquation: degToRad(-0.186),
+    equationOfCenter: degToRad(6.289),
+    secondHarmonic: degToRad(0.214),
+};
+
+const MOON_LATITUDE_TERMS_RAD = {
+    primary: degToRad(5.128),
+    plus: degToRad(0.280),
+    minus: degToRad(0.277),
+    evectionLike: degToRad(0.173),
 };
 
 /**
@@ -35,8 +50,7 @@ const MOON_LATITUDE_TERMS_DEG = {
 export function moonEquatorialCoordinates(daysSinceJ2000: number): EquatorialCoords {
     const { longitudeRad: lambdaRad, latitudeRad: betaRad } = moonEclipticCoordinates(daysSinceJ2000);
 
-    const epsilon = MEAN_OBLIQUITY.baseDeg + MEAN_OBLIQUITY.rateDegPerDay * daysSinceJ2000;
-    const epsilonRad = degToRad(epsilon);
+    const epsilonRad = MEAN_OBLIQUITY.baseRad + MEAN_OBLIQUITY.rateRadPerDay * daysSinceJ2000;
 
     const sinLambda = Math.sin(lambdaRad);
     const cosLambda = Math.cos(lambdaRad);
@@ -157,39 +171,57 @@ export function lunarElongationDeg(days_since_J2000: number): number {
     return radToDeg(moonSunAngularSeparationRad(days_since_J2000));
 }
 
-export function moonEclipticCoordinates(days_since_J2000: number): EclipticCoords {
-    const daysSinceJ2000_5 = days_since_J2000 - 0.5;
+export function moonEclipticCoordinates(daysSinceJ2000: number): EclipticCoords {
+    const daysSinceJ2000_5 = daysSinceJ2000 - 0.5;
 
-    const meanLongitudeDeg = linearAngleDeg(MOON_MEAN_LONGITUDE.baseDeg, MOON_MEAN_LONGITUDE.rateDegPerDay, daysSinceJ2000_5);
-    const moonMeanAnomalyDeg = linearAngleDeg(MOON_MEAN_ANOMALY.baseDeg, MOON_MEAN_ANOMALY.rateDegPerDay, daysSinceJ2000_5);
-    const sunMeanAnomalyDeg = linearAngleDeg(SUN_MEAN_ANOMALY.baseDeg, SUN_MEAN_ANOMALY.rateDegPerDay, daysSinceJ2000_5);
-    const argumentOfLatitudeDeg = linearAngleDeg(MOON_ARGUMENT_OF_LATITUDE.baseDeg, MOON_ARGUMENT_OF_LATITUDE.rateDegPerDay, daysSinceJ2000_5);
+    const moonMeanLongitudeRad = linearAngleRad(
+        MOON_MEAN_LONGITUDE.baseRad,
+        MOON_MEAN_LONGITUDE.rateRadPerDay,
+        daysSinceJ2000_5
+    );
+    const moonMeanAnomalyRad = linearAngleRad(
+        MOON_MEAN_ANOMALY.baseRad,
+        MOON_MEAN_ANOMALY.rateRadPerDay,
+        daysSinceJ2000_5
+    );
+    const sunMeanAnomalyRad = linearAngleRad(
+        SUN_MEAN_ANOMALY.baseRad,
+        SUN_MEAN_ANOMALY.rateRadPerDay,
+        daysSinceJ2000_5
+    );
+    const moonArgumentOfLatitudeRad = linearAngleRad(
+        MOON_ARGUMENT_OF_LATITUDE.baseRad,
+        MOON_ARGUMENT_OF_LATITUDE.rateRadPerDay,
+        daysSinceJ2000_5
+    );
+    const moonMeanElongationRad = linearAngleRad(
+        MOON_MEAN_ELONGATION.baseRad,
+        MOON_MEAN_ELONGATION.rateRadPerDay,
+        daysSinceJ2000_5
+    );
 
-    const MmRad = degToRad(moonMeanAnomalyDeg);
-    const MsRad = degToRad(sunMeanAnomalyDeg);
-    const FRad = degToRad(argumentOfLatitudeDeg);
-    const meanElongationDeg = linearAngleDeg(MOON_MEAN_ELONGATION.baseDeg, MOON_MEAN_ELONGATION.rateDegPerDay, daysSinceJ2000_5);
-    const meanElongationRad = degToRad(meanElongationDeg);
-    const twoMeanElongationRad = 2 * meanElongationRad;
+    const twoMeanElongationRad = 2 * moonMeanElongationRad;
 
-    let lambda =
-        meanLongitudeDeg +
-        MOON_LONGITUDE_TERMS_DEG.equationOfCenter * Math.sin(MmRad) +
-        MOON_LONGITUDE_TERMS_DEG.evection * Math.sin(twoMeanElongationRad - MmRad) +
-        MOON_LONGITUDE_TERMS_DEG.variation * Math.sin(twoMeanElongationRad) +
-        MOON_LONGITUDE_TERMS_DEG.secondHarmonic * Math.sin(2 * MmRad) +
-        MOON_LONGITUDE_TERMS_DEG.annualEquation * Math.sin(MsRad);
-    lambda = normalizeDeg(lambda);
+    let longitudeRad =
+        moonMeanLongitudeRad +
+        MOON_LONGITUDE_TERMS_RAD.equationOfCenter * Math.sin(moonMeanAnomalyRad) +
+        MOON_LONGITUDE_TERMS_RAD.evection * Math.sin(twoMeanElongationRad - moonMeanAnomalyRad) +
+        MOON_LONGITUDE_TERMS_RAD.variation * Math.sin(twoMeanElongationRad) +
+        MOON_LONGITUDE_TERMS_RAD.secondHarmonic * Math.sin(2 * moonMeanAnomalyRad) +
+        MOON_LONGITUDE_TERMS_RAD.annualEquation * Math.sin(sunMeanAnomalyRad);
 
-    const beta =
-        MOON_LATITUDE_TERMS_DEG.primary * Math.sin(FRad) +
-        MOON_LATITUDE_TERMS_DEG.plus * Math.sin(MmRad + FRad) +
-        MOON_LATITUDE_TERMS_DEG.minus * Math.sin(MmRad - FRad) +
-        MOON_LATITUDE_TERMS_DEG.evectionLike * Math.sin(twoMeanElongationRad - FRad);
+    longitudeRad = normalizeRad(longitudeRad);
+
+    // 3. Compute Latitude (beta)
+    const latitudeRad =
+        MOON_LATITUDE_TERMS_RAD.primary * Math.sin(moonArgumentOfLatitudeRad) +
+        MOON_LATITUDE_TERMS_RAD.plus * Math.sin(moonMeanAnomalyRad + moonArgumentOfLatitudeRad) +
+        MOON_LATITUDE_TERMS_RAD.minus * Math.sin(moonMeanAnomalyRad - moonArgumentOfLatitudeRad) +
+        MOON_LATITUDE_TERMS_RAD.evectionLike * Math.sin(twoMeanElongationRad - moonArgumentOfLatitudeRad);
 
     return {
-        longitudeRad: degToRad(lambda),
-        latitudeRad: degToRad(beta),
+        longitudeRad,
+        latitudeRad,
     };
 }
 

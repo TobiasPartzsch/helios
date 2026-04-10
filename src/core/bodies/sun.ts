@@ -1,38 +1,45 @@
-import { linearAngleDeg } from "../angles";
+import { linearAngleRad } from "../angles";
 import type { EquatorialCoords } from "../coordinates";
-import { degToRad, normalizeDeg, normalizeRad } from "../math";
+import { degToRad, normalizeRad } from "../math";
 
-const SUN_MEAN_LONGITUDE = { baseDeg: 280.46, rateDegPerDay: 0.9856474 };
-const SUN_MEAN_ANOMALY = { baseDeg: 357.528, rateDegPerDay: 0.9856003 };
-const SUN_EQUATION_OF_CENTER_DEG = {
-    firstOrder: 1.915,
-    secondOrder: 0.020,
+const SUN_MEAN_LONGITUDE = {
+    baseRad: degToRad(280.46),
+    rateRadPerDay: degToRad(0.9856474),
 };
-export const MEAN_OBLIQUITY = { baseDeg: 23.439, rateDegPerDay: -0.0000004 };
+const SUN_MEAN_ANOMALY = {
+    baseRad: degToRad(357.528),
+    rateRadPerDay: degToRad(0.9856003),
+};
+const SUN_EQUATION_OF_CENTER_RAD = {
+    firstOrder: degToRad(1.915),
+    secondOrder: degToRad(0.020),
+};
+export const MEAN_OBLIQUITY = {
+    baseRad: degToRad(23.439),
+    rateRadPerDay: degToRad(-0.0000004),
+};
 
 export function sunEclipticLongitudeRad(days_since_J2000: number): number {
-    // Mean longitude L (deg)
-    const L = linearAngleDeg(
-        SUN_MEAN_LONGITUDE.baseDeg,
-        SUN_MEAN_LONGITUDE.rateDegPerDay,
+    // Mean longitude L (rad)
+    const L = linearAngleRad(
+        SUN_MEAN_LONGITUDE.baseRad,
+        SUN_MEAN_LONGITUDE.rateRadPerDay,
         days_since_J2000
     );
 
-    // Mean anomaly g (deg)
-    const g = linearAngleDeg(
-        SUN_MEAN_ANOMALY.baseDeg,
-        SUN_MEAN_ANOMALY.rateDegPerDay,
+    // Mean anomaly g (rad)
+    const gRad = linearAngleRad(
+        SUN_MEAN_ANOMALY.baseRad,
+        SUN_MEAN_ANOMALY.rateRadPerDay,
         days_since_J2000
     );
-    const gRad = degToRad(g);
 
     let lambda =
         L +
-        SUN_EQUATION_OF_CENTER_DEG.firstOrder * Math.sin(gRad) +
-        SUN_EQUATION_OF_CENTER_DEG.secondOrder * Math.sin(2 * gRad);
-    lambda = normalizeDeg(lambda);
+        SUN_EQUATION_OF_CENTER_RAD.firstOrder * Math.sin(gRad) +
+        SUN_EQUATION_OF_CENTER_RAD.secondOrder * Math.sin(2 * gRad);
 
-    return degToRad(lambda);
+    return normalizeRad(lambda);
 }
 
 /**
@@ -43,9 +50,8 @@ export function sunEquatorialCoordinates(days_since_J2000: number): EquatorialCo
     // Ecliptic longitude lambda (rad)
     const lambdaRad = sunEclipticLongitudeRad(days_since_J2000);
 
-    // Mean obliquity of the ecliptic (deg -> rad)
-    const epsilon = MEAN_OBLIQUITY.baseDeg + MEAN_OBLIQUITY.rateDegPerDay * days_since_J2000;
-    const epsilonRad = degToRad(epsilon);
+    // Mean obliquity of the ecliptic (rad)
+    const epsilonRad = MEAN_OBLIQUITY.baseRad + MEAN_OBLIQUITY.rateRadPerDay * days_since_J2000;
 
     const sinLambda = Math.sin(lambdaRad);
     const cosLambda = Math.cos(lambdaRad);
