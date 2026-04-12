@@ -1,20 +1,22 @@
 import { describe, expect, it } from "vitest";
 import { degToRad, radToDeg } from "../angles";
+import { eclipticCartesianToEquatorial, sphericalToCartesian, subtractCartesian } from "../coordinates/transforms";
 import { angularDifferenceDeg, } from "../math";
-import { J2000_EPOCH } from "../time";
+import { DaysSinceJ2000, J2000_EPOCH } from "../time";
 import { planetEquatorialReferenceCases } from "./fixtures/planet-equatorial-reference";
-import { eclipticCartesianToEquatorial, MEAN_OBLIQUITY_J2000_DEG, planetEquatorialCoordinates, sphericalToCartesian, subtractCartesian } from "./propagate";
+import { MEAN_OBLIQUITY_J2000_DEG, planetGeocentricEquatorialCoordinates } from "./propagate";
 
 describe("planetEquatorialCoordinates", () => {
     it("throws on unknown planet", () => {
-        expect(() => planetEquatorialCoordinates("pluto", J2000_EPOCH))
+        expect(() => planetGeocentricEquatorialCoordinates("pluto", 0 as DaysSinceJ2000))
             .toThrow("Unknown planet: pluto");
     });
     const referenceCases = planetEquatorialReferenceCases;
 
     for (const testCase of referenceCases) {
         it(`${testCase.bodyName} at JD ${testCase.label} matches ${testCase.source}`, () => {
-            const coords = planetEquatorialCoordinates(testCase.bodyName, testCase.jd);
+            const daysSinceJ2000 = testCase.jd - J2000_EPOCH as DaysSinceJ2000;
+            const coords = planetGeocentricEquatorialCoordinates(testCase.bodyName, daysSinceJ2000);
             const raDeg = radToDeg(coords.rightAscensionRad);
             const decDeg = radToDeg(coords.declinationRad);
 
@@ -58,21 +60,21 @@ describe("orbit helpers", () => {
     });
 
     it("maps the ecliptic x-axis to RA=0h, Dec=0°", () => {
-        const coords = eclipticCartesianToEquatorial(1, 0, 0, J2000_EPOCH);
+        const coords = eclipticCartesianToEquatorial(1, 0, 0, 0 as DaysSinceJ2000);
 
         expect(coords.rightAscensionRad).toBeCloseTo(0, 12);
         expect(coords.declinationRad).toBeCloseTo(0, 12);
     });
 
     it("maps the negative ecliptic x-axis to RA=12h, Dec=0°", () => {
-        const coords = eclipticCartesianToEquatorial(-1, 0, 0, J2000_EPOCH);
+        const coords = eclipticCartesianToEquatorial(-1, 0, 0, 0 as DaysSinceJ2000);
 
         expect(coords.rightAscensionRad).toBeCloseTo(Math.PI, 12);
         expect(coords.declinationRad).toBeCloseTo(0, 12);
     });
 
     it("maps the ecliptic y-axis to RA≈90° and Dec≈obliquity", () => {
-        const coords = eclipticCartesianToEquatorial(0, 1, 0, J2000_EPOCH);
+        const coords = eclipticCartesianToEquatorial(0, 1, 0, 0 as DaysSinceJ2000);
 
         expect(coords.rightAscensionRad).toBeCloseTo(Math.PI / 2, 12);
         expect(coords.declinationRad).toBeCloseTo(degToRad(MEAN_OBLIQUITY_J2000_DEG), 6);

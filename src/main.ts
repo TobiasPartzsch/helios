@@ -2,11 +2,11 @@ import { degToRad, Radians, radToDeg } from "./core/angles";
 import { moonEquatorialCoordinates, moonPhase } from "./core/bodies/moon";
 import { sunEquatorialCoordinates } from "./core/bodies/sun";
 import type { EquatorialCoords, HorizontalCoords } from "./core/coordinates";
-import { equatorialToHorizontal } from "./core/coordinates";
+import { equatorialToHorizontal } from "./core/coordinates/transforms";
 import { getLunarEclipseCandidateInfo, getSolarEclipseCandidateInfo } from "./core/eclipse";
 import { HorizonProfile } from "./core/horizon";
 import { normalizeRad, radToHours } from "./core/math";
-import { planetEquatorialCoordinates } from "./core/orbit/propagate";
+import { planetGeocentricEquatorialCoordinates } from "./core/orbit/propagate";
 import { formatEclipseInfo, formatEoT, formatHours } from "./core/time/format";
 import { dateToJulianDate, getDaysSinceJ2000 } from "./core/time/julian";
 import { localSiderealTimeRad } from "./core/time/sidereal";
@@ -107,7 +107,7 @@ function update(providedJd?: number) {
     const planetHorizMap: Partial<Record<BodyName, HorizontalCoords>> = {};
     for (const name of PLANET_NAMES) {
         if (state.bodies[name].enabled) {
-            const eq = planetEquatorialCoordinates(name, daysSinceJ2000);
+            const eq = planetGeocentricEquatorialCoordinates(name, daysSinceJ2000);
             const horiz = equatorialToHorizontal(eq, latRad, lstRad, state.refractionModel);
             planetHorizMap[name] = horiz;
             const out = outputs[name as keyof typeof outputs] as HTMLElement;

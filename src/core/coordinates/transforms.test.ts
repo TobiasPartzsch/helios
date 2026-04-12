@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { degToRad } from "../angles";
-import { equatorialToHorizontal } from "./horizontal";
 import type { EquatorialCoords } from "./index";
+import { equatorialToHorizontal } from "./transforms";
 
 describe("coordinates: equatorialToHorizontal", () => {
     it("puts object on meridian at given RA", () => {

@@ -1,4 +1,4 @@
-import { degToRad } from "./math";
+import { degToRad } from "./angles";
 
 export interface HorizonPoint {
     azimuthRad: number;

@@ -1,6 +1,6 @@
 import { degToRad, Radians } from "../core/angles";
-import { equatorialToHorizontal } from "../core/coordinates/horizontal";
 import { RefractionModel } from "../core/coordinates/refraction";
+import { equatorialToHorizontal } from "../core/coordinates/transforms";
 import { HorizonProfile } from "../core/horizon";
 import { HALF_PI, PI, TWO_PI } from "../core/math";
 import { DaysSinceJ2000 } from "../core/time";

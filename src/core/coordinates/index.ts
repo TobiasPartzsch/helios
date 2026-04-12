@@ -10,4 +10,7 @@ export interface HorizontalCoords {
     altitudeRad: Radians; // height above horizon
 }
 
-export * from "./horizontal";
+export interface EclipticCoords {
+    longitudeRad: number;
+    latitudeRad: number;
+}

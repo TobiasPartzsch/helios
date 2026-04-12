@@ -1,13 +1,10 @@
 import { angularSeparationRad, degToRad, linearAngleRad, Radians, radToDeg } from "../angles";
-import type { EquatorialCoords } from "../coordinates";
-import { normalizeRad, PI, signedAngularDifferenceRad } from "../math";
+import type { EclipticCoords, EquatorialCoords } from "../coordinates";
+import { eclipticCartesianToEquatorial } from "../coordinates/transforms";
+import { normalizeRad, signedAngularDifferenceRad } from "../math";
+import { sunGeocentricEquatorialCoordinates } from "../orbit/propagate";
 import { DaysSinceJ2000 } from "../time";
-import { MEAN_OBLIQUITY, sunEclipticLongitudeRad, sunEquatorialCoordinates } from "./sun";
-
-export interface EclipticCoords {
-    longitudeRad: number;
-    latitudeRad: number;
-}
+import { sunEclipticLongitudeRad } from "./sun";
 
 const MOON_MEAN_LONGITUDE = {
     baseRad: degToRad(218.316),
@@ -49,25 +46,14 @@ const MOON_LATITUDE_TERMS_RAD = {
  * Compute the Moon's approximate equatorial coordinates (RA/Dec) for a given Julian Date.
  */
 export function moonEquatorialCoordinates(daysSinceJ2000: DaysSinceJ2000): EquatorialCoords {
-    const { longitudeRad: lambdaRad, latitudeRad: betaRad } = moonEclipticCoordinates(daysSinceJ2000);
+    const { longitudeRad, latitudeRad } = moonEclipticCoordinates(daysSinceJ2000);
+    const [x, y, z] = [
+        Math.cos(latitudeRad) * Math.cos(longitudeRad),
+        Math.cos(latitudeRad) * Math.sin(longitudeRad),
+        Math.sin(latitudeRad),
+    ];
 
-    const epsilonRad = MEAN_OBLIQUITY.baseRad + MEAN_OBLIQUITY.rateRadPerDay * daysSinceJ2000;
-
-    const sinLambda = Math.sin(lambdaRad);
-    const cosLambda = Math.cos(lambdaRad);
-    const sinBeta = Math.sin(betaRad);
-    const cosBeta = Math.cos(betaRad);
-    const sinEps = Math.sin(epsilonRad);
-    const cosEps = Math.cos(epsilonRad);
-
-    const X = cosBeta * cosLambda;
-    const Y = cosBeta * sinLambda * cosEps - sinBeta * sinEps;
-    const Z = cosBeta * sinLambda * sinEps + sinBeta * cosEps;
-
-    const rightAscensionRad = normalizeRad(Math.atan2(Y, X)) as Radians;
-    const declinationRad = Math.asin(Z) as Radians;
-
-    return { rightAscensionRad, declinationRad };
+    return eclipticCartesianToEquatorial(x, y, z, daysSinceJ2000);
 }
 
 /**
@@ -88,37 +74,39 @@ export interface MoonPhaseInfo {
  * Compute approximate Moon phase for a given Julian Date.
  */
 export function moonPhase(daysSinceJ2000: DaysSinceJ2000): MoonPhaseInfo {
-    // Moon ecliptic longitude from our model
-    const { longitudeRad: lambdaMoonRad } = moonEclipticCoordinates(daysSinceJ2000);
-    const lambdaSunRad = sunEclipticLongitudeRad(daysSinceJ2000);
+    const moonEq = moonEquatorialCoordinates(daysSinceJ2000);
+    const sunEq = sunGeocentricEquatorialCoordinates(daysSinceJ2000);
 
-    // Elongation between Moon and Sun
-    const delta = normalizeRad(lambdaMoonRad - lambdaSunRad);
+    const illuminatedFraction = calculateIllumination(sunEq, moonEq);
 
-    // Phase angle (Sun–Moon–Earth)
-    const phaseAngleRad = Math.acos(Math.cos(delta));
+    const moonEcl = moonEclipticCoordinates(daysSinceJ2000);
+    const sunLon = sunEclipticLongitudeRad(daysSinceJ2000);
+    const signedElongationRad = signedAngularDifferenceRad(moonEcl.longitudeRad, sunLon);
 
-    // Illuminated fraction
-    // const illuminatedFraction = (1 + Math.cos(phaseAngleRad)) / 2;
-    const illuminatedFraction = (1 - Math.cos(delta)) / 2;
+    const phase = illuminatedFraction;
+    const phaseName = classifyPhase(illuminatedFraction, signedElongationRad);
 
-    // Normalized phase 0..1 (0 new, 0.5 full)
-    const phase = (1 - Math.cos(delta)) / 2;
+    return { illuminatedFraction, phaseAngleRad: signedElongationRad, phase, phaseName };
+}
 
-    const phaseName = classifyPhase(illuminatedFraction, delta);
-
-    return { illuminatedFraction, phaseAngleRad, phase, phaseName };
+export function calculateIllumination(sunEq: EquatorialCoords, moonEq: EquatorialCoords): number {
+    const psi = angularSeparationRad(
+        moonEq.rightAscensionRad,
+        moonEq.declinationRad,
+        sunEq.rightAscensionRad,
+        sunEq.declinationRad,
+    );
+    return (1 + Math.cos(Math.PI - psi)) / 2;
 }
 
 function classifyPhase(illuminatedFraction: number, deltaRad: number): string {
-    const deltaDeg = radToDeg(deltaRad);
 
     // 1. Extreme Thresholds
     if (illuminatedFraction < 0.03) return "New Moon";
     if (illuminatedFraction > 0.97) return "Full Moon";
 
     // 2. Identify if it's Waxing (0-180) or Waning (180-360)
-    const isWaxing = deltaDeg > 0 && deltaDeg < 180;
+    const isWaxing = deltaRad > 0 && deltaRad < Math.PI;
 
     // 3. Quarters (near 50% illumination)
     if (illuminatedFraction > 0.45 && illuminatedFraction < 0.55) {
@@ -133,32 +121,9 @@ function classifyPhase(illuminatedFraction: number, deltaRad: number): string {
     }
 }
 
-/**
- * Calculates the precise illuminated fraction based on 
- * the angular separation between the Sun and Moon.
- */
-export function calculateIllumination(
-    sunEq: { ra: number, dec: number },
-    moonEq: { ra: number, dec: number }
-): number {
-    // Angular separation using spherical trigonometry
-    const cosPsi = Math.sin(sunEq.dec) * Math.sin(moonEq.dec) +
-        Math.cos(sunEq.dec) * Math.cos(moonEq.dec) *
-        Math.cos(sunEq.ra - moonEq.ra);
-
-    // Safety clamp for acos
-    const psi = Math.acos(Math.max(-1, Math.min(1, cosPsi)));
-
-    // For a rough approximation, the Phase Angle is roughly 180 - psi
-    const phaseAngle = PI - psi;
-
-    // Illuminated fraction (0.0 to 1.0)
-    return (1 + Math.cos(phaseAngle)) / 2;
-}
-
 export function moonSunAngularSeparationRad(daysSinceJ2000: DaysSinceJ2000): number {
     const moonEq = moonEquatorialCoordinates(daysSinceJ2000);
-    const sunEq = sunEquatorialCoordinates(daysSinceJ2000);
+    const sunEq = sunGeocentricEquatorialCoordinates(daysSinceJ2000);
 
     return angularSeparationRad(
         moonEq.rightAscensionRad,
