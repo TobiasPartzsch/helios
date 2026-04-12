@@ -58,7 +58,6 @@ body {
     align-items: center;
     padding: 10px 20px;
     gap: 15px;
-    /* Consistent gap between buttons/labels */
     width: 100%;
     box-sizing: border-box;
 }
@@ -113,17 +112,47 @@ body {
 .animation-controls {
     background: rgba(0, 0, 0, 0.8);
     backdrop-filter: blur(4px);
-    /* A touch of modern magic */
     padding: 8px 15px;
-    width: 100%;
-    display: flex;
     flex-wrap: wrap;
-    /* Allows wrapping on very small screens */
-    align-items: center;
     justify-content: flex-start;
     gap: 20px;
     border-top: 1px solid var(--color-border);
-    box-sizing: border-box;
+}
+
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.speed-control__row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.speed-slider {
+    flex: 0 0 320px;
+    width: 320px;
+    max-width: 320px;
+}
+
+.speed-value {
+    min-width: 3ch;
+    text-align: right;
+}
+
+.speed-negative {
+    color: #8b6cff;
+}
+
+.speed-zero {
+    color: #b0b0b0;
+}
+
+.speed-positive {
+    color: #4fc3f7;
 }
 
 /* --- Observer & Horizon Controls --- */

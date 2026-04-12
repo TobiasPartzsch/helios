@@ -186,7 +186,18 @@ initHorizonFetch((profile) => {
 UI.buttons.play.onclick = () => (isPlaying = true);
 UI.buttons.pause.onclick = () => (isPlaying = false);
 UI.inputs.simSpeed.addEventListener("input", (e) => {
-    UI.slider.speedVal.innerText = (e.target as HTMLInputElement).value;
+    const value = Number((e.target as HTMLInputElement).value);
+    UI.slider.speedVal.innerText = String(value);
+
+    UI.slider.speedVal.classList.remove("speed-negative", "speed-zero", "speed-positive");
+
+    if (value < 0) {
+        UI.slider.speedVal.classList.add("speed-negative");
+    } else if (value > 0) {
+        UI.slider.speedVal.classList.add("speed-positive");
+    } else {
+        UI.slider.speedVal.classList.add("speed-zero");
+    }
 });
 Object.values(UI.inputs).forEach(
     (el) => el.addEventListener("change", handleManualInput),

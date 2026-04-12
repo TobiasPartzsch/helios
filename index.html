@@ -26,9 +26,12 @@
                             <option value="604800">Week / sec</option>
                         </select>
                     </label>
-                    <label>Multiplier:
-                        <input type="range" id="sim-speed" min="1" max="100" value="1">
-                        <span id="speed-val">1</span>x
+                    <label class="speed-control">
+                        Multiplier:
+                        <span class="speed-control__row">
+                            <input type="range" id="sim-speed" class="speed-slider" min="-100" max="100" value="1">
+                            <span id="speed-val" class="speed-value">1</span>x
+                        </span>
                     </label>
                     <div class="lens-controls">
                         <button id="btn-lens" title="Magnifying Lens (L)">🔍 Lens</button>
