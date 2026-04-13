@@ -64,23 +64,20 @@ function update(providedJd?: number) {
         state.date.getUTCSeconds() / 3600;
     const lmtHours = ((utcHours + state.lonDeg / 15.0) % 24 + 24) % 24;
 
-    // Sun
-    let sunHoriz = null;
-    if (state.bodies.sun.enabled) {
-        const sunEq = sunEquatorialCoordinates(daysSinceJ2000);
-        sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
-        const sunHourAngleRad = normalizeRad(lstRad - sunEq.rightAscensionRad);
+    // Sun needs to always be processed
+    const sunEq = sunEquatorialCoordinates(daysSinceJ2000);
+    const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
+    const sunHourAngleRad = normalizeRad(lstRad - sunEq.rightAscensionRad);
 
-        const solarEclipse = getSolarEclipseCandidateInfo(daysSinceJ2000);
+    const solarEclipse = getSolarEclipseCandidateInfo(daysSinceJ2000);
 
-        outputs.sun.innerText = solarEclipse.isCandidate
-            ? `${formatAltAz(sunHoriz)} | ${formatEclipseInfo("Solar cand.", solarEclipse.longitudeErrorDeg, solarEclipse.eclipticLatitudeDeg)}`
-            : formatAltAz(sunHoriz);
-        outputs.sun.title = formatRaDec(sunEq);
+    outputs.sun.innerText = solarEclipse.isCandidate
+        ? `${formatAltAz(sunHoriz)} | ${formatEclipseInfo("Solar cand.", solarEclipse.longitudeErrorDeg, solarEclipse.eclipticLatitudeDeg)}`
+        : formatAltAz(sunHoriz);
+    outputs.sun.title = formatRaDec(sunEq);
 
-        const eotHours = lmtHours - 12 - (radToHours(sunHourAngleRad));
-        outputs.eot.innerText = formatEoT(eotHours);
-    }
+    const eotHours = lmtHours - 12 - (radToHours(sunHourAngleRad));
+    outputs.eot.innerText = formatEoT(eotHours);
 
     // Moon
     let moonHoriz = null;
