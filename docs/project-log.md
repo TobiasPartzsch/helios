@@ -159,3 +159,31 @@
 - Extracted reusable linear angle progression helper into `src/core/angles.ts`
 - Renamed angular separation vs. ecliptic longitude difference helpers to better reflect their meaning
 - Fixed CSS selector for `.command-strip-container`
+
+## Recent Progress
+
+### Standardized Temporal and Angular Architecture
+- Implemented `DaysSinceJ2000` branded type in `src/core/time/julian.ts` to unify the project's temporal epoch.
+- Established `Radians` and `Degrees` branded types in `src/core/angles.ts` to enforce unit safety across coordinate transformations.
+- Refactored `sun.ts` and `moon.ts` to perform internal calculations natively in radians, eliminating redundant `degToRad` calls in high-frequency loops.
+- Optimized `SkyRenderer` and `buildBodyTrackPath` to consume branded types, ensuring temporal synchronization between celestial positions and orbital tracks.
+- Decoupled `src/core/math.ts` into a pure numeric utility library, moving domain-specific conversions and angular logic to the `angles` module.
+
+## Recent Progress
+
+### Heliocentric Ephemeris Refactor
+- Refactored planetary position computation to use a heliocentric VSOP87-based pipeline.
+- Split coordinate conversion helpers into `src/core/coordinates/transforms.ts`.
+- Updated Sun and Moon calculations to derive apparent positions from the shared orbital model.
+- Preserved existing sky rendering behavior while improving the underlying astronomical model.
+- Added support for negative animation speed multipliers in the UI.
+
+## Recent Progress
+
+### Body Display Modes and Path Rendering
+- Added per-body display modes for hidden, shown, and shown-with-path states.
+- Replaced the old map visibility toggle with a select-based UI for body rendering modes.
+- Refactored sky rendering to draw body tracks and markers through shared helpers.
+- Wired the new body display state through the UI, state model, and renderer.
+- Added path rendering support for Sun and Moon, with existing body telemetry preserved.
+- Made the sun telemetry always calculate. Otherwise the moon face gets upset.

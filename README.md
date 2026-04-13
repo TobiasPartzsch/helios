@@ -86,10 +86,10 @@ Solar and lunar rendering still use lightweight direct models suitable for visua
 - Invariant tests cover core math, time, coordinate, refraction, and orbit helper transformations
 
 ## Next Steps by priority
+- **Performance and Optimization (Profiling?):** Currently some things like the planetary paths and the zoom seem to be very unresponive.
+- **Draw by distance:** Currently we draw bodies in an arbitrary order. We should probably go from farthest to closest.
 - **Eclipse refinement:** Move from candidate detection toward better event characterization and presentation.
-- **Optimization:** Certain functions are probably called a lot more than they should be, especially solar and lunar coordinate paths.
 - **More general conjunction/plane-crossing pattern:** Reuse the current Moon-Sun logic for other phenomena such as planetary conjunctions and transits.
-- **Optimization:** Certain functions are probably called a lot more than they should be. Looking at `moon`/`sunEquatorialCoordinates` in particular.
 - **Voyage Mode**: Import a CSV waypoint list (`timestamp_utc, lat, lon, elev_m`) and animate observer 
   position over time, interpolating along great circle routes. Playback controls with rewind support. 
   Track extent shown as overlay on sky canvas. Demonstrates why globe geometry produces 
