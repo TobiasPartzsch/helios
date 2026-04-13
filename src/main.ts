@@ -80,7 +80,6 @@ function update(providedJd?: number) {
 
         const eotHours = lmtHours - 12 - (radToHours(sunHourAngleRad));
         outputs.eot.innerText = formatEoT(eotHours);
-
     }
 
     // Moon
@@ -160,6 +159,7 @@ requestAnimationFrame(animate);
 const now = new Date();
 syncUiFromDate(now);
 simTime = now.getTime();
+syncBodyControls();
 update(dateToJulianDate(now));
 
 // Manual input handler
@@ -208,6 +208,17 @@ Object.values(UI.select).forEach(
 
 // Body toggle listeners - recalculate immediately on change
 for (const name of BODY_NAMES) {
-    UI.bodies[name].enabled.addEventListener("change", handleManualInput);
-    UI.bodies[name].visible.addEventListener("change", () => update());
+    UI.bodies[name].enabled.addEventListener("change", syncBodyControls);
+    UI.bodies[name].displayMode.addEventListener("change", syncBodyControls);
+}
+
+function syncBodyControls() {
+    for (const name of BODY_NAMES) {
+        const enabled = UI.bodies[name].enabled.checked;
+        UI.outputs[name].hidden = !enabled
+        UI.bodies[name].displayMode.hidden = !enabled;
+        UI.bodies[name].label.hidden = !enabled
+        // optionally also hide/show wrappers here
+        update()
+    }
 }

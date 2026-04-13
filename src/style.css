@@ -215,22 +215,6 @@ body {
     /* Push horizon controls to the right side */
 }
 
-.body-visible-toggle,
-.body-visible-label,
-.body-telemetry {
-    display: none;
-}
-
-.body-enabled:checked~.body-visible-toggle,
-.body-enabled:checked~.body-visible-label,
-.body-enabled:checked~.body-telemetry {
-    display: inline-flex;
-}
-
-.body-enabled:checked~.body-telemetry {
-    display: block;
-}
-
 .body-row {
     padding: 0.15rem 0;
     font-size: 0.9rem;

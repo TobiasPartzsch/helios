@@ -117,8 +117,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-sun-enabled" class="body-enabled" checked>
                                 <label for="body-sun-enabled">Sun</label>
-                                <input type="checkbox" id="body-sun-visible" class="body-visible-toggle" checked>
-                                <label for="body-sun-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-sun-label" for="body-sun-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-sun-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown">Show</option>
+                                    <option value="shownWithPath" selected>Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-sun" class="mono" title="">-</span>
                                 </div>
@@ -127,8 +132,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-moon-enabled" class="body-enabled" checked>
                                 <label for="body-moon-enabled">Moon</label>
-                                <input type="checkbox" id="body-moon-visible" class="body-visible-toggle" checked>
-                                <label for="body-moon-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-moon-label" for="body-moon-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-moon-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown" selected>Show</option>
+                                    <option value="shownWithPath" selected>Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-moon" class="mono" title="">-</span>
                                 </div>
@@ -137,8 +147,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-mercury-enabled" class="body-enabled">
                                 <label for="body-mercury-enabled">Mercury</label>
-                                <input type="checkbox" id="body-mercury-visible" class="body-visible-toggle" checked>
-                                <label for="body-mercury-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-mercury-label" for="body-mercury-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-mercury-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown" selected>Show</option>
+                                    <option value="shownWithPath">Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-mercury" class="mono" title="">-</span>
                                 </div>
@@ -147,8 +162,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-venus-enabled" class="body-enabled">
                                 <label for="body-venus-enabled">Venus</label>
-                                <input type="checkbox" id="body-venus-visible" class="body-visible-toggle" checked>
-                                <label for="body-venus-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-venus-label" for="body-venus-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-venus-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown" selected>Show</option>
+                                    <option value="shownWithPath">Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-venus" class="mono" title="">-</span>
                                 </div>
@@ -157,8 +177,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-mars-enabled" class="body-enabled">
                                 <label for="body-mars-enabled">Mars</label>
-                                <input type="checkbox" id="body-mars-visible" class="body-visible-toggle" checked>
-                                <label for="body-mars-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-mars-label" for="body-mars-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-mars-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown" selected>Show</option>
+                                    <option value="shownWithPath">Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-mars" class="mono" title="">-</span>
                                 </div>
@@ -167,8 +192,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-jupiter-enabled" class="body-enabled">
                                 <label for="body-jupiter-enabled">Jupiter</label>
-                                <input type="checkbox" id="body-jupiter-visible" class="body-visible-toggle" checked>
-                                <label for="body-jupiter-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-jupiter-label" for="body-jupiter-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-jupiter-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown" selected>Show</option>
+                                    <option value="shownWithPath">Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-jupiter" class="mono" title="">-</span>
                                 </div>
@@ -177,8 +207,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-saturn-enabled" class="body-enabled">
                                 <label for="body-saturn-enabled">Saturn</label>
-                                <input type="checkbox" id="body-saturn-visible" class="body-visible-toggle" checked>
-                                <label for="body-saturn-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-saturn-label" for="body-saturn-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-saturn-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown" selected>Show</option>
+                                    <option value="shownWithPath">Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-saturn" class="mono" title="">-</span>
                                 </div>
@@ -187,8 +222,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-uranus-enabled" class="body-enabled">
                                 <label for="body-uranus-enabled">Uranus</label>
-                                <input type="checkbox" id="body-uranus-visible" class="body-visible-toggle" checked>
-                                <label for="body-uranus-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-uranus-label" for="body-uranus-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-uranus-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown" selected>Show</option>
+                                    <option value="shownWithPath">Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-uranus" class="mono" title="">-</span>
                                 </div>
@@ -197,8 +237,13 @@
                             <div class="body-row">
                                 <input type="checkbox" id="body-neptune-enabled" class="body-enabled">
                                 <label for="body-neptune-enabled">Neptune</label>
-                                <input type="checkbox" id="body-neptune-visible" class="body-visible-toggle" checked>
-                                <label for="body-neptune-visible" class="body-visible-label">Show on map</label>
+                                <label id="body-neptune-label" for="body-neptune-display"
+                                    class="body-visible-label">Map:</label>
+                                <select id="body-neptune-display" class="body-display-mode">
+                                    <option value="hidden">Don't show</option>
+                                    <option value="shown" selected>Show</option>
+                                    <option value="shownWithPath">Show with path</option>
+                                </select>
                                 <div class="body-telemetry">
                                     <span id="out-neptune" class="mono" title="">-</span>
                                 </div>

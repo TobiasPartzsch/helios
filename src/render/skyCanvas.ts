@@ -1,4 +1,5 @@
-import { degToRad, Radians } from "../core/angles";
+import { degToRad } from "../core/angles";
+import { EquatorialCoords } from "../core/coordinates";
 import { RefractionModel } from "../core/coordinates/refraction";
 import { equatorialToHorizontal } from "../core/coordinates/transforms";
 import { HorizonProfile } from "../core/horizon";
@@ -158,7 +159,7 @@ export function buildBodyTrackPath(
     lonRad: number,
     dimensions: { width: number, height: number },
     isSouthern: boolean,
-    getEqCoords: (daysSinceJ2000: DaysSinceJ2000) => { rightAscensionRad: Radians, declinationRad: Radians },
+    getEqCoords: (daysSinceJ2000: DaysSinceJ2000) => EquatorialCoords,
     config: TrackConfig,
     refractionModel: RefractionModel = 'none',
 ): Path2D {

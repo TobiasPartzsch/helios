@@ -1,12 +1,12 @@
 import { RefractionModel } from "../core/coordinates/refraction";
 
-export interface BodyConfig {
-    enabled: boolean;
-    visible: boolean;
-}
-
 export const BODY_NAMES = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune"] as const;
 export type BodyName = typeof BODY_NAMES[number];
+export type BodyDisplayMode = "hidden" | "shown" | "shownWithPath";
+export interface BodyConfig {
+    enabled: boolean;
+    displayMode: BodyDisplayMode;
+}
 
 export const UI = {
     canvas: {
@@ -61,10 +61,11 @@ export const UI = {
             name,
             {
                 enabled: document.getElementById(`body-${name}-enabled`) as HTMLInputElement,
-                visible: document.getElementById(`body-${name}-visible`) as HTMLInputElement,
+                displayMode: document.getElementById(`body-${name}-display`) as HTMLSelectElement,
+                label: document.getElementById(`body-${name}-label`) as HTMLElement,
             },
         ]),
-    ) as Record<BodyName, { enabled: HTMLInputElement; visible: HTMLInputElement }>,
+    ) as Record<BodyName, { enabled: HTMLInputElement; displayMode: HTMLSelectElement, label: HTMLElement }>,
 };
 
 export function getObserverState() {
@@ -86,7 +87,7 @@ export function getObserverState() {
                 name,
                 {
                     enabled: UI.bodies[name].enabled?.checked ?? true,
-                    visible: UI.bodies[name].visible?.checked ?? true,
+                    displayMode: UI.bodies[name].displayMode?.value as BodyDisplayMode ?? true,
                 } satisfies BodyConfig,
             ]),
         ) as Record<BodyName, BodyConfig>,

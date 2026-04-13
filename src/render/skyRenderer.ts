@@ -1,10 +1,11 @@
 import { moonEquatorialCoordinates } from "../core/bodies/moon";
 import { sunEquatorialCoordinates } from "../core/bodies/sun";
-import { HorizontalCoords } from "../core/coordinates";
+import { EquatorialCoords, HorizontalCoords } from "../core/coordinates";
 import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
+import { planetGeocentricEquatorialCoordinates } from "../core/orbit/propagate";
 import { DaysSinceJ2000 } from "../core/time";
-import { BodyConfig, BodyName } from "../ui/elements";
+import { BodyConfig, BodyDisplayMode, BodyName } from "../ui/elements";
 import {
     buildBodyTrackPath,
     drawBody,
@@ -15,6 +16,8 @@ import {
     strokeBodyTrack,
     TrackConfig,
 } from "./skyCanvas";
+
+type BodyRenderer = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, symbol?: string) => void;
 
 const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
     sun: { windowDays: 1.0, sampleIntervalDays: 1 / 144, color: "#ffa500", size: 10, symbol: "☉" },  // 10-minute steps
@@ -112,67 +115,82 @@ export class SkyRenderer {
         }
 
         // Tracks
-        if (bodies.sun.enabled && bodies.sun.visible) {
-            if (!this.trackCache.has("sun")) {
-                this.trackCache.set("sun", buildBodyTrackPath(
-                    daysSinceJ2000, latRad, lonRad, dims, isSouthern,
-                    sunEquatorialCoordinates, BODY_TRACKS.sun!, refractionModel
-                ));
-            }
-            strokeBodyTrack(ctx, this.trackCache.get("sun")!, BODY_TRACKS.sun!.color);
+        if (bodies.sun.enabled && shouldDrawPath(bodies.sun.displayMode)) {
+            this.drawTrack("sun", daysSinceJ2000, latRad, lonRad, dims, isSouthern, refractionModel, sunEquatorialCoordinates, ctx);
         }
 
-        if (bodies.moon.enabled && bodies.moon.visible) {
-            if (!this.trackCache.has("moon")) {
-                this.trackCache.set("moon", buildBodyTrackPath(
-                    daysSinceJ2000, latRad, lonRad, dims, isSouthern,
-                    moonEquatorialCoordinates, BODY_TRACKS.moon!, refractionModel
-                ));
-            }
-            strokeBodyTrack(ctx, this.trackCache.get("moon")!, BODY_TRACKS.moon!.color);
+        if (bodies.moon.enabled && shouldDrawPath(bodies.moon.displayMode)) {
+            this.drawTrack("moon", daysSinceJ2000, latRad, lonRad, dims, isSouthern, refractionModel, moonEquatorialCoordinates, ctx);
         }
 
-        // for (const [name] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
-        //     if (!bodies[name].enabled) continue;
-        //     const track = BODY_TRACKS[name];
-        //     if (!track) continue;
-
-        //     if (!this.trackCache.has(name)) {
-        //         this.trackCache.set(name, buildBodyTrackPath(
-        //             jd, latRad, lonDeg, dims, isSouthern,
-        //             (t) => planetEquatorialCoordinates(name, t),
-        //             track, refractionModel, name
-        //         ));
-        //     }
-        //     strokeBodyTrack(ctx, this.trackCache.get(name)!, track.color);
-        // }
-
-        type BodyRenderer = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, symbol?: string) => void;
+        for (const [name] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
+            if (!bodies[name].enabled || !shouldDrawPath(bodies[name].displayMode)) continue;
+            this.drawTrack(
+                name, daysSinceJ2000, latRad, lonRad, dims, isSouthern, refractionModel,
+                (t) => planetGeocentricEquatorialCoordinates(name, daysSinceJ2000), ctx
+            );
+        }
 
         const bodyRenderer: BodyRenderer = useSymbols ? drawBodySymbol : drawBody;
 
         // Sun
-        if (sunHoriz && bodies.sun.visible) {
-            const { color, size, symbol } = BODY_TRACKS.sun!;
-            const pos = getEquirectangularXY(sunHoriz.azimuthRad, sunHoriz.altitudeRad, dims, isSouthern);
-            bodyRenderer(ctx, pos.x, pos.y, size, color, symbol);
+        if (sunHoriz && shouldDrawBody(bodies.sun.displayMode)) {
+            this.drawBody("sun", dims, sunHoriz, isSouthern, bodyRenderer, ctx)
         }
 
         // Moon
-        if (moonHoriz && bodies.moon.visible) {
-            const { color, size, symbol } = BODY_TRACKS.moon!;
-            const pos = getEquirectangularXY(moonHoriz.azimuthRad, moonHoriz.altitudeRad, dims, isSouthern);
-            bodyRenderer(ctx, pos.x, pos.y, size, color, symbol);
+        if (moonHoriz && shouldDrawBody(bodies.moon.displayMode)) {
+            this.drawBody("moon", dims, moonHoriz, isSouthern, bodyRenderer, ctx)
         }
 
         // Planets
         for (const [name, horiz] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
-            if (!bodies[name].visible) continue;
-            const color = BODY_TRACKS[name]?.color ?? "#ffffff";
-            const size = BODY_TRACKS[name]?.size ?? 4;
-            const symbol = BODY_TRACKS[name]?.symbol ?? "?"
-            const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dims, isSouthern);
-            bodyRenderer(ctx, pos.x, pos.y, size, color, symbol);
+            if (!bodies[name].enabled || !shouldDrawBody(bodies[name].displayMode)) continue;
+            this.drawBody(name, dims, horiz, isSouthern, bodyRenderer, ctx)
         }
     }
+
+    private drawTrack(
+        name: BodyName,
+        daysSinceJ2000: DaysSinceJ2000,
+        latRad: number,
+        lonRad: number,
+        dims: { width: number; height: number },
+        isSouthern: boolean,
+        refractionModel: RefractionModel,
+        coordFn: (daysSinceJ2000: DaysSinceJ2000) => EquatorialCoords,
+        ctx: CanvasRenderingContext2D,
+    ): void {
+        const track = BODY_TRACKS[name];
+        if (!track) return;
+
+        if (!this.trackCache.has(name)) {
+            this.trackCache.set(name, buildBodyTrackPath(
+                daysSinceJ2000, latRad, lonRad, dims, isSouthern,
+                coordFn, track, refractionModel
+            ));
+            console.log("built track", name, this.trackCache.get(name));
+        }
+
+        strokeBodyTrack(ctx, this.trackCache.get(name)!, track.color);
+    }
+
+    private drawBody(
+        name: BodyName,
+        dims: { width: number; height: number },
+        horizontalCoords: HorizontalCoords,
+        isSouthern: boolean,
+        bodyRenderer: BodyRenderer,
+        ctx: CanvasRenderingContext2D,
+    ): void {
+        const track = BODY_TRACKS[name];
+        if (!track) return;
+
+        const { color, size, symbol } = track;
+        const pos = getEquirectangularXY(horizontalCoords.azimuthRad, horizontalCoords.altitudeRad, dims, isSouthern);
+        bodyRenderer(ctx, pos.x, pos.y, size, color, symbol);
+    }
 }
+
+const shouldDrawBody = (mode: BodyDisplayMode) => mode !== "hidden";
+const shouldDrawPath = (mode: BodyDisplayMode) => mode === "shownWithPath";
