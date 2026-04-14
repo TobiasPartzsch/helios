@@ -21,16 +21,14 @@ type BodyRenderer = (ctx: CanvasRenderingContext2D, x: number, y: number, size: 
 
 const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
     sun: { windowDays: 1.0, sampleIntervalDays: 1 / 144, color: "#ffa500", size: 10, symbol: "☉" },  // 10-minute steps
-    moon: { windowDays: 1.05, sampleIntervalDays: 1 / 144, color: "#888", size: 8, symbol: "☽" },
-    // windowDays for the planets is their solar orbit duration in days but currently unused
-    // their color and size is used though
-    mercury: { windowDays: 88, sampleIntervalDays: 1 / 24, color: "#b5b5b5", size: 4, symbol: "☿" },  // hourly
-    venus: { windowDays: 225, sampleIntervalDays: 1 / 24, color: "#e8cda0", size: 4, symbol: "♀" },
-    mars: { windowDays: 687, sampleIntervalDays: 1, color: "#c1440e", size: 4, symbol: "♂" },  // daily
-    jupiter: { windowDays: 4333, sampleIntervalDays: 1, color: "#c88b3a", size: 4, symbol: "♃" },
-    saturn: { windowDays: 10759, sampleIntervalDays: 1, color: "#e4d191", size: 4, symbol: "♄" },
-    uranus: { windowDays: 30687, sampleIntervalDays: 1, color: "#7de8e8", size: 4, symbol: "⛢" },
-    neptune: { windowDays: 60190, sampleIntervalDays: 1, color: "#5b7fdb", size: 4, symbol: "♆" },
+    moon: { windowDays: 1.0, sampleIntervalDays: 1 / 144, color: "#888", size: 8, symbol: "☽" },
+    mercury: { windowDays: 1, sampleIntervalDays: 1 / 72, color: "#b5b5b5", size: 4, symbol: "☿" },  // orbit 88
+    venus: { windowDays: 1, sampleIntervalDays: 1 / 72, color: "#e8cda0", size: 4, symbol: "♀" },  // orbit 225
+    mars: { windowDays: 1, sampleIntervalDays: 1 / 72, color: "#c1440e", size: 4, symbol: "♂" },  // orbit 687
+    jupiter: { windowDays: 1, sampleIntervalDays: 1 / 72, color: "#c88b3a", size: 4, symbol: "♃" },  // orbit 4333
+    saturn: { windowDays: 1, sampleIntervalDays: 1 / 72, color: "#e4d191", size: 4, symbol: "♄" },  // orbit 10759
+    uranus: { windowDays: 1, sampleIntervalDays: 1 / 72, color: "#7de8e8", size: 4, symbol: "⛢" },  // orbit 30687
+    neptune: { windowDays: 1, sampleIntervalDays: 1 / 72, color: "#5b7fdb", size: 4, symbol: "♆" },  // orbit 60190
 };
 
 

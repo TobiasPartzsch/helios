@@ -48,7 +48,9 @@ function formatRaDec(eq: EquatorialCoords): string {
 }
 
 function update(providedJd?: number) {
-    console.log("Frame update")
+    // TODO: remove performance check
+    const start = performance.now();
+
     const { outputs } = UI;
     const state = getObserverState();
     const jd = providedJd ?? dateToJulianDate(state.date);
@@ -133,6 +135,11 @@ function update(providedJd?: number) {
     };
     skyRenderer.render(renderState);
     lensController.setRenderState(renderState);
+
+    const end = performance.now();
+    if (end - start > 16) {
+        console.warn(`Slow frame: ${(end - start).toFixed(2)}ms`);
+    }
 }
 
 function animate(timestamp: number) {

@@ -4,8 +4,7 @@ import { RefractionModel } from "../core/coordinates/refraction";
 import { equatorialToHorizontal } from "../core/coordinates/transforms";
 import { HorizonProfile } from "../core/horizon";
 import { HALF_PI, PI, TWO_PI } from "../core/math";
-import { DaysSinceJ2000 } from "../core/time";
-import { localSiderealTimeRad } from "../core/time/sidereal";
+import { DaysSinceJ2000, localSiderealTimeRad } from "../core/time";
 
 export interface CanvasDimensions {
     width: number;
@@ -170,35 +169,39 @@ export function buildBodyTrackPath(
     let lastShiftedAz: number | null = null;
 
     const startDays = daysSinceJ2000 - windowDays / 2;
+    const fixedEq = getEqCoords(daysSinceJ2000);
+    let firstPos: { x: number, y: number } | null = null;
 
     for (let i = 0; i <= steps; i++) {
-        const sampleDays = (startDays + (i * stepInDays)) as DaysSinceJ2000;
-        try {
-            const eq = getEqCoords(sampleDays);
-            const lstRad = localSiderealTimeRad(sampleDays, lonRad);
-            const horiz = equatorialToHorizontal(eq, latRad, lstRad, refractionModel);
+        const isLast = i === steps;
+        const sampleDays = isLast
+            ? (daysSinceJ2000 + windowDays / 2) as DaysSinceJ2000
+            : (startDays + (i * stepInDays)) as DaysSinceJ2000;
 
-            const centerOffset = isSouthern ? 0 : PI;
-            let shiftedAz = horiz.azimuthRad - centerOffset;
-            while (shiftedAz <= -PI) shiftedAz += TWO_PI;
-            while (shiftedAz > PI) shiftedAz -= TWO_PI;
+        const lstRad = localSiderealTimeRad(sampleDays, lonRad);
+        const horiz = equatorialToHorizontal(fixedEq, latRad, lstRad, refractionModel);
 
-            const isWrap = lastShiftedAz !== null &&
-                ((lastShiftedAz > HALF_PI && shiftedAz < -HALF_PI) ||
-                    (lastShiftedAz < -HALF_PI && shiftedAz > HALF_PI));
+        const centerOffset = isSouthern ? 0 : PI;
+        let shiftedAz = horiz.azimuthRad - centerOffset;
+        while (shiftedAz <= -PI) shiftedAz += TWO_PI;
+        while (shiftedAz > PI) shiftedAz -= TWO_PI;
 
-            lastShiftedAz = shiftedAz;
+        const isWrap = lastShiftedAz !== null && Math.abs(shiftedAz - lastShiftedAz) > PI;
 
-            const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dimensions, isSouthern);
+        lastShiftedAz = shiftedAz;
 
-            if (i === 0 || isWrap) {
-                path.moveTo(pos.x, pos.y);
-            } else {
-                path.lineTo(pos.x, pos.y);
-            }
-        } catch (error) {
-            console.log(`error at i=${i}, jd=${sampleDays.toFixed(1)}:`, error);
+        const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dimensions, isSouthern);
+        if (i === 0) {
+            firstPos = pos;
+            path.moveTo(pos.x, pos.y);
+        } else if (isWrap) {
+            path.moveTo(pos.x, pos.y);
+        } else {
+            path.lineTo(pos.x, pos.y);
         }
+    }
+    if (firstPos) {
+        path.lineTo(firstPos.x, firstPos.y);
     }
 
     return path;
