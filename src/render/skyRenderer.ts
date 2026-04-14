@@ -167,7 +167,6 @@ export class SkyRenderer {
                 daysSinceJ2000, latRad, lonRad, dims, isSouthern,
                 coordFn, track, refractionModel
             ));
-            console.log("built track", name, this.trackCache.get(name));
         }
 
         strokeBodyTrack(ctx, this.trackCache.get(name)!, track.color);

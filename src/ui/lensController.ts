@@ -20,7 +20,7 @@ const LENS_DEFAULTS = {
     sizeStep: 20,       // px per +/- keypress
     zoomStep: 0.5,      // zoom per scroll tick
     minZoom: 0.5,
-    maxZoom: 10,
+    maxZoom: 100,
     minSize: 100,
     maxSize: 800,
 };
