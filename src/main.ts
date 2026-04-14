@@ -48,6 +48,7 @@ function formatRaDec(eq: EquatorialCoords): string {
 }
 
 function update(providedJd?: number) {
+    console.log("Frame update")
     const { outputs } = UI;
     const state = getObserverState();
     const jd = providedJd ?? dateToJulianDate(state.date);
@@ -215,7 +216,7 @@ function syncBodyControls() {
         UI.outputs[name].hidden = !enabled
         UI.bodies[name].displayMode.hidden = !enabled;
         UI.bodies[name].label.hidden = !enabled
-        // optionally also hide/show wrappers here
-        update()
     }
+    update()
+
 }
