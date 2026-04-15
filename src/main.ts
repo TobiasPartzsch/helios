@@ -14,9 +14,10 @@ import { MoonFaceRenderer } from "./render/moonFaceRenderer";
 import { SkyRenderer, SkyRenderState } from "./render/skyRenderer";
 import "./style.css";
 import { applyEasterEgg } from "./ui/easteregg";
-import { BODY_NAMES, BodyName, getObserverState, syncUiFromDate, UI } from "./ui/elements";
+import { BODY_NAMES, BodyName, getObserverState, syncBodyControls, syncTimeControlsFromDate, UI } from "./ui/elements";
 import { initHorizonFetch } from "./ui/horizonController";
 import { LensController } from "./ui/lensController";
+import { getPlaying, setPlaying } from "./ui/simulationController";
 
 // Renderers
 const skyRenderer = new SkyRenderer(UI.canvas.main);
@@ -25,7 +26,6 @@ const lensController = new LensController();
 
 // Simulation state
 let currentHorizonProfile: HorizonProfile | null = null;
-let isPlaying = false;
 let lastTimestamp = 0;
 let simTime = new Date(
     Date.UTC(
@@ -47,7 +47,7 @@ function formatRaDec(eq: EquatorialCoords): string {
     return `RA: ${radToHours(eq.rightAscensionRad).toFixed(3)}h, Dec: ${radToDeg(eq.declinationRad).toFixed(2)}°`;
 }
 
-function update(providedJd?: number) {
+export function update(providedJd?: number) {
     // TODO: remove performance check
     const start = performance.now();
 
@@ -143,14 +143,14 @@ function update(providedJd?: number) {
 }
 
 function animate(timestamp: number) {
-    if (isPlaying) {
+    if (getPlaying()) {
         const dt = timestamp - lastTimestamp;
         const unit = parseFloat(UI.select.timeUnit.value);
         const multiplier = parseFloat(UI.inputs.simSpeed.value);
         UI.slider.speedVal.innerText = multiplier.toString();
         simTime += dt * unit * multiplier;
         const date = new Date(simTime);
-        syncUiFromDate(date);
+        syncTimeControlsFromDate(date);
         update(dateToJulianDate(date));
     }
     lastTimestamp = timestamp;
@@ -162,7 +162,7 @@ requestAnimationFrame(animate);
 
 // Initialize to UTC now
 const now = new Date();
-syncUiFromDate(now);
+syncTimeControlsFromDate(now);
 simTime = now.getTime();
 syncBodyControls();
 update(dateToJulianDate(now));
@@ -188,8 +188,7 @@ initHorizonFetch((profile) => {
 });
 
 // Listeners
-UI.buttons.play.onclick = () => (isPlaying = true);
-UI.buttons.pause.onclick = () => (isPlaying = false);
+UI.buttons.play.onclick = () => setPlaying(!getPlaying());
 UI.inputs.simSpeed.addEventListener("input", (e) => {
     const value = Number((e.target as HTMLInputElement).value);
     UI.slider.speedVal.innerText = String(value);
@@ -211,19 +210,13 @@ Object.values(UI.select).forEach(
     (el) => el.addEventListener("change", handleManualInput),
 );
 
-// Body toggle listeners - recalculate immediately on change
 for (const name of BODY_NAMES) {
-    UI.bodies[name].enabled.addEventListener("change", syncBodyControls);
-    UI.bodies[name].displayMode.addEventListener("change", syncBodyControls);
-}
-
-function syncBodyControls() {
-    for (const name of BODY_NAMES) {
-        const enabled = UI.bodies[name].enabled.checked;
-        UI.outputs[name].hidden = !enabled
-        UI.bodies[name].displayMode.hidden = !enabled;
-        UI.bodies[name].label.hidden = !enabled
-    }
-    update()
-
+    UI.bodies[name].enabled.addEventListener("change", () => {
+        syncBodyControls();
+        update();
+    });
+    UI.bodies[name].displayMode.addEventListener("change", () => {
+        syncBodyControls();
+        update();
+    });
 }

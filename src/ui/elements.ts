@@ -29,7 +29,6 @@ export const UI = {
     buttons: {
         fetchHorizon: document.getElementById("btn-fetch-horizon") as HTMLButtonElement,
         play: document.getElementById("btn-play") as HTMLButtonElement,
-        pause: document.getElementById("btn-pause") as HTMLButtonElement,
         lens: document.getElementById("btn-lens") as HTMLButtonElement,
     },
     outputs: {
@@ -95,13 +94,22 @@ export function getObserverState() {
     };
 }
 
-export function syncUiFromDate(date: Date): void {
+export function syncTimeControlsFromDate(date: Date): void {
     UI.inputs.year.value = date.getUTCFullYear().toString();
     UI.inputs.month.value = (date.getUTCMonth() + 1).toString();
     UI.inputs.day.value = date.getUTCDate().toString();
     UI.inputs.clockTime.value = [date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()]
         .map((n) => String(n).padStart(2, "0"))
         .join(":");
+}
+
+export function syncBodyControls() {
+    for (const name of BODY_NAMES) {
+        const enabled = UI.bodies[name].enabled.checked;
+        UI.outputs[name].hidden = !enabled;
+        UI.bodies[name].displayMode.hidden = !enabled;
+        UI.bodies[name].label.hidden = !enabled;
+    }
 }
 
 // Startup check
