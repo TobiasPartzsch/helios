@@ -5,13 +5,23 @@ import { MEAN_OBLIQUITY_J2000_DEG, OBLIQUITY_DEG_PER_CENTURY } from "../orbit/pr
 import { DaysSinceJ2000, JULIAN_CENTURY } from "../time";
 import { applyRefraction, RefractionModel } from "./refraction";
 
-export function sphericalToCartesian(L: number, B: number, R: number): [number, number, number] {
-    const cosB = Math.cos(B);
+export type Vec3 = [number, number, number];
+
+export function sphericalToCartesian(longitudeRad: Radians, latitudeRad: Radians, radius: number = 1): Vec3 {
+    const cosB = Math.cos(latitudeRad);
     return [
-        R * cosB * Math.cos(L),
-        R * cosB * Math.sin(L),
-        R * Math.sin(B),
+        radius * cosB * Math.cos(longitudeRad),
+        radius * cosB * Math.sin(longitudeRad),
+        radius * Math.sin(latitudeRad),
     ];
+}
+
+export function cartesianToSpherical([x, y, z]: Vec3): { longitudeRad: Radians, latitudeRad: Radians, radius: number } {
+    return {
+        latitudeRad: Math.atan2(z, Math.hypot(x, y)) as Radians,
+        longitudeRad: normalizeRad(Math.atan2(y, x)) as Radians,
+        radius: Math.hypot(x, y, z)
+    };
 }
 
 /**
@@ -87,3 +97,24 @@ export function subtractCartesian(
     return [x - earthX, y - earthY, z - earthZ];
 }
 
+export function normalizeVec3([x, y, z]: Vec3): Vec3 {
+    const len = Math.hypot(x, y, z);
+    return [x / len, y / len, z / len];
+}
+
+export function slerpVec(a: Vec3, b: Vec3, t: number): Vec3 {
+    const dot = Math.max(-1, Math.min(1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2]));
+    const omega = Math.acos(dot);
+
+    if (omega === 0) return a;
+
+    const sinOmega = Math.sin(omega);
+    const scaleA = Math.sin((1 - t) * omega) / sinOmega;
+    const scaleB = Math.sin(t * omega) / sinOmega;
+
+    return normalizeVec3([
+        scaleA * a[0] + scaleB * b[0],
+        scaleA * a[1] + scaleB * b[1],
+        scaleA * a[2] + scaleB * b[2],
+    ]);
+}

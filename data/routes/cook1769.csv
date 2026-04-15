@@ -1,0 +1,29 @@
+timestamp_utc,lat,lon,label,note
+1768-08-26T00:00:00Z,50.3769,-4.1434,Plymouth,departure
+1768-11-15T00:00:00Z,-22.9068,-43.1729,Rio de Janeiro,arrival window start
+1768-12-02T00:00:00Z,-22.9068,-43.1729,Rio de Janeiro,arrival window end
+1769-04-13T00:00:00Z,-17.6509,-149.4260,Tahiti,Matavai Bay
+1769-06-03T00:00:00Z,-17.6509,-149.4260,Tahiti,observation
+1769-07-13T00:00:00Z,-17.6509,-149.4260,Tahiti,departure
+1769-07-16T00:00:00Z,-16.7378,-151.2864,Huahine,arrival
+1769-07-20T00:00:00Z,-16.8370,-151.4070,Raiatea,arrival window start
+1769-08-09T00:00:00Z,-16.8370,-151.4070,Raiatea,arrival window end
+1769-10-06T00:00:00Z,-37.6878,176.1651,New Zealand,arrival
+1769-10-07T00:00:00Z,-38.2715,178.3387,Poverty Bay,visit
+1769-10-15T00:00:00Z,-39.6640,177.0320,Cape Kidnappers,visit
+1769-11-09T00:00:00Z,-36.8333,175.7833,Mercury Bay,visit
+1770-01-06T00:00:00Z,-34.4000,173.3000,North Cape,visit
+1770-01-22T00:00:00Z,-41.2000,174.1000,Arapawa Island,visit
+1770-01-31T00:00:00Z,-41.2000,174.1000,Queen Charlotte Sound,return
+1770-02-05T00:00:00Z,-41.2300,174.0000,Cook Strait,crossing
+1770-03-10T00:00:00Z,-46.9000,167.7000,South Cape,visit
+1770-03-27T00:00:00Z,-40.7000,173.8000,Admiralty Bay,visit
+1770-04-19T00:00:00Z,-38.0000,145.0000,Point Hicks,landing
+1770-04-29T00:00:00Z,-19.2667,146.8167,Silver Beach / Botany Bay,arrival window start
+1770-05-06T00:00:00Z,-33.8688,151.2093,Port Jackson,arrival
+1770-05-23T08:00:00Z,-24.8833,152.3500,Bustard Bay / Seventeen Seventy,visit
+1770-06-11T00:00:00Z,-16.0000,145.0000,Great Barrier Reef,encounter start
+1770-08-03T00:00:00Z,-16.0000,145.0000,Great Barrier Reef,encounter end
+1770-08-22T12:00:00Z,-10.6833,142.5167,Cape York,noon position
+1770-10-15T00:00:00Z,-6.2000,106.8167,Batavia,arrival
+1771-07-12T06:00:00Z,50.3500,-5.0000,Beachy Head,arrival

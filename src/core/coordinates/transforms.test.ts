@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { degToRad } from "../angles";
+import { degToRad, radToDeg } from "../angles";
 import type { EquatorialCoords } from "./index";
-import { equatorialToHorizontal } from "./transforms";
+import { cartesianToSpherical, equatorialToHorizontal, normalizeVec3, slerpVec, sphericalToCartesian, Vec3 } from "./transforms";
 
 describe("coordinates: equatorialToHorizontal", () => {
     it("puts object on meridian at given RA", () => {
@@ -97,4 +97,58 @@ describe("coordinates: equatorialToHorizontal", () => {
         expect(withExplicitNone.altitudeRad).toBeCloseTo(withDefault.altitudeRad, 12);
         expect(withExplicitNone.azimuthRad).toBeCloseTo(withDefault.azimuthRad, 12);
     });
+});
+
+describe("coordinates: spherical/cartesian", () => {
+    it("roundtrips spherical coordinates", () => {
+        const lonRad = degToRad(30);
+        const latRad = degToRad(-15);
+
+        const vec = sphericalToCartesian(lonRad, latRad, 1);
+        const roundtrip = cartesianToSpherical(vec);
+
+        expect(radToDeg(roundtrip.longitudeRad)).toBeCloseTo(30, 3);
+        expect(radToDeg(roundtrip.latitudeRad)).toBeCloseTo(-15, 3);
+        expect(roundtrip.radius).toBeCloseTo(1, 3);
+    });
+});
+
+describe("coordinates: 3-dimensional vectors", () => {
+    it("normalizes a vector to unit length", () => {
+        const v = normalizeVec3([3, 4, 0]);
+        expect(Math.hypot(...v)).toBeCloseTo(1, 6);
+    });
+
+    it("slerps halfway between orthogonal vectors", () => {
+        const a: Vec3 = [1, 0, 0];
+        const b: Vec3 = [0, 1, 0];
+
+        const mid = slerpVec(a, b, 0.5);
+
+        expect(Math.hypot(...mid)).toBeCloseTo(1, 6);
+        expect(mid[0]).toBeCloseTo(mid[1], 6);
+    });
+
+    it("slerps to starting vector", () => {
+        const a: Vec3 = [1, 0, 0];
+        const b: Vec3 = [0, 1, 0];
+
+        const result = slerpVec(a, b, 0);
+
+        expect(result[0]).toBeCloseTo(1, 6);
+        expect(result[1]).toBeCloseTo(0, 6);
+        expect(result[2]).toBeCloseTo(0, 6);
+    });
+
+    it("slerps to ending vector", () => {
+        const a: Vec3 = [1, 0, 0];
+        const b: Vec3 = [0, 1, 0];
+
+        const result = slerpVec(a, b, 1);
+
+        expect(result[0]).toBeCloseTo(0, 6);
+        expect(result[1]).toBeCloseTo(1, 6);
+        expect(result[2]).toBeCloseTo(0, 6);
+    });
+
 });
