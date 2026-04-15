@@ -7,6 +7,7 @@ import { getLunarEclipseCandidateInfo, getSolarEclipseCandidateInfo } from "./co
 import { HorizonProfile } from "./core/horizon";
 import { normalizeRad, radToHours } from "./core/math";
 import { planetGeocentricEquatorialCoordinates } from "./core/orbit/propagate";
+import { loadRouteCsv, parseRouteCsv } from "./core/routes/parseCsv";
 import { formatEclipseInfo, formatEoT, formatHours } from "./core/time/format";
 import { dateToJulianDate, getDaysSinceJ2000 } from "./core/time/julian";
 import { localSiderealTimeRad } from "./core/time/sidereal";
@@ -17,6 +18,7 @@ import { applyEasterEgg } from "./ui/easteregg";
 import { BODY_NAMES, BodyName, getObserverState, syncBodyControls, syncTimeControlsFromDate, UI } from "./ui/elements";
 import { initHorizonFetch } from "./ui/horizonController";
 import { LensController } from "./ui/lensController";
+import { initRouteController } from "./ui/routeController";
 import { getPlaying, setPlaying } from "./ui/simulationController";
 
 // Renderers
@@ -203,6 +205,19 @@ UI.inputs.simSpeed.addEventListener("input", (e) => {
         UI.slider.speedVal.classList.add("speed-zero");
     }
 });
+
+initRouteController(
+    async (path) => {
+        const route = await loadRouteCsv(path);
+        // store route, refresh UI
+    },
+    async (file) => {
+        const csv = await file.text();
+        const route = parseRouteCsv(csv);
+        // store route, refresh UI
+    },
+);
+
 Object.values(UI.inputs).forEach(
     (el) => el.addEventListener("change", handleManualInput),
 );

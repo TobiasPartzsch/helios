@@ -16,6 +16,7 @@
                 <!-- Row 1: Time & Simulation -->
                 <div class="animation-controls">
                     <button id="btn-play">▶ Play</button>
+
                     <label>Unit:
                         <select id="time-unit">
                             <option value="1">Real Time</option>
@@ -32,19 +33,47 @@
                             <span id="speed-val" class="speed-value">1</span>x
                         </span>
                     </label>
+                    <div class="route-controls">
+                        <label for="route-track">Route:</label>
+                        <input id="route-track" type="range" min="0" max="1000" value="0">
+                        <span id="route-progress">0%</span>
+                    </div>
+
                     <div class="lens-controls">
                         <button id="btn-lens" title="Magnifying Lens (L)">🔍 Lens</button>
                     </div>
                 </div>
                 <!-- Row 2: Environment & Horizon -->
-                <div class="horizon-controls">
-                    <strong>Horizon Profile:</strong>
-                    <div class="input-group">
-                        <label for="horizon-id">ID:</label>
-                        <input id="horizon-id" type="text" placeholder="GWI3IL1L" style="width: 80px;">
-                        <button id="btn-fetch-horizon">Get Horizon</button>
+                <div class="source-controls">
+                    <div class="mode-option">
+                        <label class="mode-choice">
+                            <input type="radio" name="source-mode" value="horizon" checked>
+                            <span>Horizon Profile</span>
+                        </label>
+
+                        <div class="mode-option__content">
+                            <div class="input-group">
+                                <label for="horizon-id">ID:</label>
+                                <input id="horizon-id" type="text" placeholder="GWI3IL1L" style="width: 80px;">
+                                <button id="btn-fetch-horizon">Get Horizon</button>
+                            </div>
+                            <span id="horizon-status" class="status-msg">No profile loaded</span>
+                        </div>
                     </div>
-                    <span id="horizon-status" class="status-msg">No profile loaded</span>
+                    <div class="mode-option">
+                        <label class="mode-choice">
+                            <input type="radio" name="source-mode" value="route" checked>
+                            <span>Travel route</span>
+                        </label>
+                        <div class="mode-option__content">
+                            <div class="route-import-controls">
+                                <label for="route-file">Route:</label>
+                                <input id="route-file" type="text" placeholder="data/routes/cook1769.csv">
+                                <button id="btn-browse-route">Browse…</button>
+                                <input id="route-file-picker" type="file" accept=".csv,text/csv" hidden>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </footer>
         </main>

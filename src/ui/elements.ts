@@ -25,11 +25,14 @@ export const UI = {
         horizonId: document.getElementById("horizon-id") as HTMLInputElement,
         simSpeed: document.getElementById("sim-speed") as HTMLInputElement,
         useSymbols: document.getElementById("use-symbols") as HTMLInputElement,
+        routeFile: document.getElementById("route-file") as HTMLInputElement,
+        routeFilePicker: document.getElementById("route-file-picker") as HTMLInputElement,
     },
     buttons: {
         fetchHorizon: document.getElementById("btn-fetch-horizon") as HTMLButtonElement,
         play: document.getElementById("btn-play") as HTMLButtonElement,
         lens: document.getElementById("btn-lens") as HTMLButtonElement,
+        browseRoute: document.getElementById("btn-browse-route") as HTMLButtonElement,
     },
     outputs: {
         jd: document.getElementById("out-jd") as HTMLElement,
