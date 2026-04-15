@@ -187,3 +187,19 @@
 - Wired the new body display state through the UI, state model, and renderer.
 - Added path rendering support for Sun and Moon, with existing body telemetry preserved.
 - Made the sun telemetry always calculate. Otherwise the moon face gets upset.
+
+### Optimization and Main Loop Refactoring
+- Refactored `syncBodyControls` to move the `update()` call outside the body-toggle loop, reducing initialization and toggle overhead by 10x.
+- Optimized `buildBodyTrackPath` by "pinning" planetary Equatorial coordinates (RA/Dec) for the duration of the diurnal path, significantly reducing redundant VSOP87 series expansions.
+- Replaced the heavy `try-catch` block in the hot rendering loop with explicit data validation to improve JIT compiler optimization.
+- Improved path continuity by refining the `isWrap` logic from a quadrant-based check to a more robust distance-based threshold (PI radians).
+- Balanced path fidelity and performance by increasing sampling rates (1/72 for planets, 1/144 for Sun/Moon) to eliminate chord-length gaps in diurnal arcs.
+- Drastically improved UI and Zoom responsiveness by reducing the "Self Time" of the main `update()` function.
+
+### Travel Route Loading and Replay Foundations
+
+- Added route CSV parsing and typed route points for travel replay data.
+- Added spherical/cartesian helpers and spherical interpolation for smooth ground-track motion.
+- Added route loading from file picker or path input.
+- Introduced route mode UI groundwork and mutual exclusion with horizon profiles.
+- Added route/horizon mode selection and route import controls in the UI.

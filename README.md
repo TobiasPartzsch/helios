@@ -29,9 +29,8 @@ Planned features include:
 - TypeScript
 - Custom astronomy/math modules:
   - `core/time` – Julian Date and sidereal time.
-  - `core/coordinates` – RA/Dec ↔ Alt/Az.
+  - `core/coordinates` – RA/Dec ↔ Alt/Az transforms and atmospheric refraction models.
   - `core/bodies` – Sun and Moon positions and phases.
-  - `core/coordinates` – RA/Dec ↔ Alt/Az, refraction.
   - `core/orbit` – planetary propagation and VSOP87B pipeline.
   - `core/eclipse` – eclipse candidate logic.
 
@@ -86,7 +85,7 @@ Solar and lunar rendering still use lightweight direct models suitable for visua
 - Invariant tests cover core math, time, coordinate, refraction, and orbit helper transformations
 
 ## Next Steps by priority
-- **Performance and Optimization (Profiling?):** Currently some things like the planetary paths and the zoom seem to be very unresponive.
+- **Further Performance Optimization:** While the main update loop and path rendering have been optimized (pinned RA/Dec, reduced sampling), the Zoom lens remains a heavy operation. Investigate moving path generation to a Web Worker or implementing a more aggressive caching layer for the SkyRenderState."
 - **Draw by distance:** Currently we draw bodies in an arbitrary order. We should probably go from farthest to closest.
 - **Eclipse refinement:** Move from candidate detection toward better event characterization and presentation.
 - **More general conjunction/plane-crossing pattern:** Reuse the current Moon-Sun logic for other phenomena such as planetary conjunctions and transits.
@@ -102,14 +101,8 @@ Solar and lunar rendering still use lightweight direct models suitable for visua
 - **Lunar Detail Tooltip**: Convert the moon face canvas to a hover overlay to 
   reclaim sidebar space on smaller screens. Somewhat quick win to be used as a filler.
 - **Position on different bodies**: Instead of only earth, allow the option to render the sky on any body that is simulated.
-- **Planet Tracks**: Basic track rendering is implemented and cached. The planets don't render correctly
-  but inner planets match their mid position at least. Outer planets (Mars, Jupiter, Saturn) show a 
-  positional discrepancy between the track midpoint and the current position dot, 
-  likely due to LST mismatch between track sampling and dot computation. 
-  Needs investigation: compare `lstRad` at track midpoint vs dot computation for an 
-  outer planet to confirm root cause.
-  Further development on pause.
-- **Easteregg idea:** change something into the Brand from Berserk on Solar eclipses
+- **Planet Tracks (Improved):** Diurnal paths now use optimized sampling (1/72 for planets) and 'pinned' equatorial coordinates for the 24h window. Note: The 'North gap' and minor drift in outer planet tracks remain under investigation—likely a sidereal vs. solar day alignment or equirectangular wrapping artifact.
+- **Easteregg idea:** change something into the Brand from Berserk on Solar eclipses, maybe a watermark
 
 ## Project Log
 
