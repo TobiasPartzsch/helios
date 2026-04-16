@@ -1,51 +1,38 @@
-import { setSimTime } from "../main";
-import { syncTimeControlsFromDate, UI } from "./elements";
-import { getRouteData, hasRouteData } from "./routeController";
+import { engine } from "../core/simulation/instance";
+import { dateToJulianDate, getDaysSinceJ2000 } from "../core/time";
+import { UI } from "./elements";
+import { getRouteData } from "./routeController";
 
-let isPlaying = false;
-let isRouteMode = false;
+export function getPlaying() {
+    return !engine.getState().isPaused;
+}
 
-export function getPlaying() { return isPlaying; }
-export function getIsRouteMode() { return isRouteMode; }
-
+export function getIsRouteMode() {
+    return engine.getState().isRouteMode;
+}
 export function setRouteMode(isRouteMode: boolean) {
-    isRouteMode = isRouteMode;
-    syncUIState();
+    engine.updateState({ isRouteMode });
 }
 
 export function setPlaying(next: boolean) {
-    isPlaying = next;
-    UI.buttons.play.textContent = isPlaying ? "⏸ Pause" : "▶ Play";
-    syncUIState();
-}
-
-// A helper that iterates over any object of HTML elements
-function setGroupDisabled(group: Record<string, HTMLElement | undefined>, disabled: boolean) {
-    Object.values(group).forEach(el => {
-        if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLButtonElement) {
-            el.disabled = disabled;
-        }
-    });
-}
-
-export function syncUIState() {
-    setGroupDisabled(UI.inputs.time, isPlaying);
-
-    setGroupDisabled(UI.inputs.location, isPlaying || isRouteMode);
-
-    UI.inputs.route.track.disabled = !isRouteMode;
-    UI.inputs.route.track.disabled = !isRouteMode || !hasRouteData;
+    engine.updateState({ isPaused: !next });
+    UI.buttons.play.textContent = next ? "⏸ Pause" : "▶ Play";
 }
 
 export function startRouteSimulation() {
-    if (hasRouteData()) {
-        // Parse the first timestamp from the CSV
-        const startTimeMs = Date.parse(getRouteData()[0].timestampUtc);
+    const routeData = getRouteData();
+    if (routeData.length > 0) {
+        const isoString = routeData[0].timestampUtc;
+        const startDate = new Date(isoString);
 
-        // Update your master simulation state (adjust variable name to match yours)
-        setSimTime(startTimeMs)
+        const jd = dateToJulianDate(startDate);
+        const startDays = getDaysSinceJ2000(jd);
 
-        // Sync the UI clock inputs to this new date
-        syncTimeControlsFromDate(new Date(startTimeMs));
+        engine.updateState({
+            time: startDays,
+            isPaused: true
+        });
+
+        UI.buttons.play.textContent = "⏸ Pause";
     }
 }

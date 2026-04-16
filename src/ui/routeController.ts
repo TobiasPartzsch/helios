@@ -1,7 +1,8 @@
 import { interpolateRoute } from "../core/routes/interpolate";
 import { RoutePoint } from "../core/routes/types";
-import { setSimTime } from "../main";
-import { syncTimeControlsFromDate, UI } from "./elements";
+import { engine } from "../core/simulation/instance";
+import { dateToJulianDate, getDaysSinceJ2000 } from "../core/time";
+import { UI } from "./elements";
 import { setRouteMode } from "./simulationController";
 
 let loadedRoute: RoutePoint[] = [];
@@ -79,23 +80,26 @@ function applyRoutePoint(index: number) {
     UI.inputs.location.lon.value = point.lonDeg.toFixed(6);
     UI.inputs.location.elev.value = "0";
 
-    const progress = Math.round((index / (loadedRoute.length - 1)) * 100);
     const progressLabel = document.getElementById("route-progress");
-    if (progressLabel) progressLabel.textContent = `${progress}%`;
+    if (progressLabel) {
+        const progress = Math.round((index / (loadedRoute.length - 1)) * 100);
+        progressLabel.textContent = `${progress}%`;
+    }
 
-    // 4. Update the engine (when you have it)
-    // engine.setTime(date);
-    // engine.setObserver(point.latDeg, point.lonDeg);
     console.log(`Moving to: ${point.latDeg}, ${point.lonDeg} at ${point.timestampUtc}`);
 
     const pointDate = new Date(point.timestampUtc);
-    const ms = pointDate.getTime();
+    const jd = dateToJulianDate(pointDate);
+    const daysSinceJ2000 = getDaysSinceJ2000(jd);
 
-    setSimTime(ms); // Update master clock
-    syncTimeControlsFromDate(pointDate); // Update UI clock
-
-    // Sync the Time UI
-    syncTimeControlsFromDate(pointDate);
+    engine.updateState({
+        time: daysSinceJ2000,
+        observer: {
+            latDeg: point.latDeg,
+            lonDeg: point.lonDeg,
+            elevationAmsl: 0 // As discussed
+        }
+    });
 }
 
 /**
@@ -146,3 +150,12 @@ export function syncRouteUI(currentTimeMs: number) {
     console.log("Syncing Slider:", ratio);
 
 }
+
+UI.inputs.route.track.addEventListener("input", (e) => {
+    const index = parseInt((e.target as HTMLInputElement).value);
+    const point = loadedRoute[index];
+
+    // Instead of messing with UI directly:
+    const newJD = dateToJulianDate(new Date(point.timestampUtc));
+    engine.setTime(getDaysSinceJ2000(newJD));
+});

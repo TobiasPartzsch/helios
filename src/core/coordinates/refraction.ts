@@ -1,6 +1,5 @@
 import { degToRad, Radians, radToDeg } from "../angles";
-
-export type RefractionModel = 'none' | 'bennett';
+import { RefractionModel } from "../types";
 
 export function applyRefraction(
     altitudeRad: Radians,

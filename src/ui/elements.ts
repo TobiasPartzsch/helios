@@ -1,4 +1,4 @@
-import { RefractionModel } from "../core/coordinates/refraction";
+import { SimulationState } from "../core/types";
 
 export const BODY_NAMES = ["sun", "moon", "mercury", "venus", "mars", "jupiter", "saturn", "uranus", "neptune"] as const;
 export type BodyName = typeof BODY_NAMES[number];
@@ -87,33 +87,6 @@ export const UI = {
     ) as Record<BodyName, { enabled: HTMLInputElement; displayMode: HTMLSelectElement, label: HTMLElement }>,
 };
 
-export function getObserverState() {
-    return {
-        latDeg: parseFloat(UI.inputs.location.lat.value),
-        lonDeg: parseFloat(UI.inputs.location.lon.value),
-        elevM: parseFloat(UI.inputs.location.elev.value),
-        refractionModel: UI.selects.refraction.value as RefractionModel,
-        date: new Date(
-            Date.UTC(
-                parseInt(UI.inputs.time.year.value),
-                parseInt(UI.inputs.time.month.value) - 1,
-                parseInt(UI.inputs.time.day.value),
-                ...UI.inputs.time.clockTime.value.split(":").map(Number),
-            ),
-        ),
-        bodies: Object.fromEntries(
-            BODY_NAMES.map((name) => [
-                name,
-                {
-                    enabled: UI.bodies[name].enabled?.checked ?? true,
-                    displayMode: UI.bodies[name].displayMode?.value as BodyDisplayMode ?? true,
-                } satisfies BodyConfig,
-            ]),
-        ) as Record<BodyName, BodyConfig>,
-        useSymbols: UI.inputs.settings.useSymbols?.checked ?? false,
-    };
-}
-
 export function syncTimeControlsFromDate(date: Date): void {
     UI.inputs.time.year.value = date.getUTCFullYear().toString();
     UI.inputs.time.month.value = (date.getUTCMonth() + 1).toString();
@@ -123,12 +96,16 @@ export function syncTimeControlsFromDate(date: Date): void {
         .join(":");
 }
 
-export function syncBodyControls() {
+export function syncBodyControls(state: SimulationState) {
     for (const name of BODY_NAMES) {
-        const enabled = UI.bodies[name].enabled.checked;
-        UI.outputs[name].hidden = !enabled;
-        UI.bodies[name].displayMode.hidden = !enabled;
-        UI.bodies[name].label.hidden = !enabled;
+        const config = state.bodies[name];
+        const isEnabled = config.enabled;
+
+        UI.bodies[name].enabled.checked = isEnabled;
+
+        UI.outputs[name].hidden = !isEnabled;
+        UI.bodies[name].displayMode.hidden = !isEnabled;
+        UI.bodies[name].label.hidden = !isEnabled;
     }
 }
 

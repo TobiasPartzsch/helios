@@ -4,22 +4,23 @@ import { sunEquatorialCoordinates } from "./core/bodies/sun";
 import type { EquatorialCoords, HorizontalCoords } from "./core/coordinates";
 import { equatorialToHorizontal } from "./core/coordinates/transforms";
 import { getLunarEclipseCandidateInfo, getSolarEclipseCandidateInfo } from "./core/eclipse";
-import { HorizonProfile } from "./core/horizon";
 import { normalizeRad, radToHours } from "./core/math";
 import { planetGeocentricEquatorialCoordinates } from "./core/orbit/propagate";
 import { loadRouteCsv, parseRouteCsv } from "./core/routes/parseCsv";
+import { engine } from "./core/simulation/instance";
 import { formatEclipseInfo, formatEoT, formatHours } from "./core/time/format";
-import { dateToJulianDate, getDaysSinceJ2000 } from "./core/time/julian";
+import { dateToJulianDate, DaysSinceJ2000, getDaysSinceJ2000, J2000_EPOCH } from "./core/time/julian";
 import { localSiderealTimeRad } from "./core/time/sidereal";
+import { SimulationState } from "./core/types";
 import { MoonFaceRenderer } from "./render/moonFaceRenderer";
 import { SkyRenderer, SkyRenderState } from "./render/skyRenderer";
 import "./style.css";
 import { applyEasterEgg } from "./ui/easteregg";
-import { BODY_NAMES, BodyName, getObserverState, syncBodyControls, syncTimeControlsFromDate, UI } from "./ui/elements";
+import { BODY_NAMES, BodyConfig, BodyName, syncBodyControls, syncTimeControlsFromDate, UI } from "./ui/elements";
 import { initHorizonFetch } from "./ui/horizonController";
 import { LensController } from "./ui/lensController";
-import { handleLoadedRoute, initRouteController, updateObserverFromRoute } from "./ui/routeController";
-import { getIsRouteMode, getPlaying, setPlaying } from "./ui/simulationController";
+import { handleLoadedRoute, initRouteController, syncRouteUI } from "./ui/routeController";
+import { getPlaying, setPlaying } from "./ui/simulationController";
 
 // Renderers
 const skyRenderer = new SkyRenderer(UI.canvas.main);
@@ -27,21 +28,7 @@ const moonFaceRenderer = new MoonFaceRenderer(UI.canvas.moonFace);
 const lensController = new LensController();
 
 // Simulation state
-let currentHorizonProfile: HorizonProfile | null = null;
 let lastTimestamp = 0;
-let simTime = new Date(
-    Date.UTC(
-        parseInt(UI.inputs.time.year.value),
-        parseInt(UI.inputs.time.month.value) - 1,
-        parseInt(UI.inputs.time.day.value),
-        ...UI.inputs.time.clockTime.value.split(":").map(Number),
-    ),
-).getTime();
-export function getSimTime() { return simTime; }
-export function setSimTime(date: number) {
-    simTime = date;
-    // Any logic that MUST run whenever time changes goes here
-}
 
 // Planet names handled by the Kepler engine (excludes sun and moon)
 const PLANET_NAMES = BODY_NAMES.filter((n) => n !== "sun" && n !== "moon");
@@ -54,29 +41,29 @@ function formatRaDec(eq: EquatorialCoords): string {
     return `RA: ${radToHours(eq.rightAscensionRad).toFixed(3)}h, Dec: ${radToDeg(eq.declinationRad).toFixed(2)}°`;
 }
 
-export function update(providedJd?: number) {
+export function update(daysSinceJ2000: DaysSinceJ2000) {
     // TODO: remove performance check
     const start = performance.now();
 
+    const engineState = engine.getState();
     const { outputs } = UI;
-    const state = getObserverState();
-    const jd = providedJd ?? dateToJulianDate(state.date);
-    const daysSinceJ2000 = getDaysSinceJ2000(providedJd ?? dateToJulianDate(state.date));
 
-    const latRad = degToRad(state.latDeg);
-    const lonRad = degToRad(state.lonDeg)
+    // 1. Calculate fundamental observer angles
+    const latRad = degToRad(engineState.observer.latDeg);
+    const lonRad = degToRad(engineState.observer.lonDeg);
     const lstRad = localSiderealTimeRad(daysSinceJ2000, lonRad);
 
-    // Telemetry
-    const utcHours =
-        state.date.getUTCHours() +
-        state.date.getUTCMinutes() / 60 +
-        state.date.getUTCSeconds() / 3600;
-    const lmtHours = ((utcHours + state.lonDeg / 15.0) % 24 + 24) % 24;
+    // 2. Convert J2000 to a Date JUST for the legacy formatters/telemetry
+    const unixMs = (daysSinceJ2000 + 2451545.0 - 2440587.5) * 86400000;
+    const date = new Date(unixMs);
+
+    // 3. Telemetry (LMT/EoT)
+    const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
+    const lmtHours = ((utcHours + engineState.observer.lonDeg / 15.0) % 24 + 24) % 24;
 
     // Sun needs to always be processed
     const sunEq = sunEquatorialCoordinates(daysSinceJ2000);
-    const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
+    const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, engineState.refractionModel);
     const sunHourAngleRad = normalizeRad(lstRad - sunEq.rightAscensionRad);
 
     const solarEclipse = getSolarEclipseCandidateInfo(daysSinceJ2000);
@@ -91,9 +78,9 @@ export function update(providedJd?: number) {
 
     // Moon
     let moonHoriz = null;
-    if (state.bodies.moon.enabled) {
+    if (engineState.bodies.moon.enabled) {
         const moonEq = moonEquatorialCoordinates(daysSinceJ2000);
-        moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad, state.refractionModel);
+        moonHoriz = equatorialToHorizontal(moonEq, latRad, lstRad, engineState.refractionModel);
         const phaseInfo = moonPhase(daysSinceJ2000);
         const lunarEclipse = getLunarEclipseCandidateInfo(daysSinceJ2000);
 
@@ -112,9 +99,9 @@ export function update(providedJd?: number) {
     // Planets
     const planetHorizMap: Partial<Record<BodyName, HorizontalCoords>> = {};
     for (const name of PLANET_NAMES) {
-        if (state.bodies[name].enabled) {
+        if (engineState.bodies[name].enabled) {
             const eq = planetGeocentricEquatorialCoordinates(name, daysSinceJ2000);
-            const horiz = equatorialToHorizontal(eq, latRad, lstRad, state.refractionModel);
+            const horiz = equatorialToHorizontal(eq, latRad, lstRad, engineState.refractionModel);
             planetHorizMap[name] = horiz;
             const out = outputs[name as keyof typeof outputs] as HTMLElement;
             out.innerText = formatAltAz(horiz);
@@ -122,12 +109,13 @@ export function update(providedJd?: number) {
         }
     }
 
-    applyEasterEgg(state.date);
+    applyEasterEgg(date);
 
     // Time telemetry
     outputs.lst.innerText = formatHours(radToHours(lstRad));
     outputs.lmt.innerText = formatHours(lmtHours);
-    outputs.jd.innerText = jd.toFixed(5);
+    const fullJD = daysSinceJ2000 + J2000_EPOCH;
+    UI.outputs.jd.innerText = fullJD.toFixed(5);
 
     // Render
     const renderState: SkyRenderState = {
@@ -135,10 +123,10 @@ export function update(providedJd?: number) {
         sunHoriz: sunHoriz ?? undefined,
         moonHoriz: moonHoriz ?? undefined,
         planetHorizMap,
-        bodies: state.bodies,
-        horizonProfile: currentHorizonProfile,
-        refractionModel: state.refractionModel,
-        useSymbols: state.useSymbols,
+        bodies: engineState.bodies,
+        horizonProfile: engineState.horizonProfile,
+        refractionModel: engineState.refractionModel,
+        useSymbols: engineState.useSymbols,
     };
     skyRenderer.render(renderState);
     lensController.setRenderState(renderState);
@@ -150,45 +138,22 @@ export function update(providedJd?: number) {
 }
 
 function animate(timestamp: number) {
-    if (getPlaying()) {
-        const dt = timestamp - lastTimestamp;
-        const unit = parseFloat(UI.selects.timeUnit.value);
-        const multiplier = parseFloat(UI.inputs.settings.simSpeed.value);
-
-        // Advance Master Time
-        simTime += dt * unit * multiplier;
-        const date = new Date(simTime);
-
-        // 1. Update Time UI
-        syncTimeControlsFromDate(date);
-
-        // 2. If in Route Mode, update Location and Slider
-        updateObserverFromRoute(simTime); // Call it regardless of mode
-        if (getIsRouteMode()) {
-            // We use the new helper in the controller
-            updateObserverFromRoute(simTime);
-        }
-
-        // 3. Trigger celestial engine update
-        update(dateToJulianDate(date));
-    }
+    if (!lastTimestamp) lastTimestamp = timestamp;
+    const dt = timestamp - lastTimestamp;
     lastTimestamp = timestamp;
+
+    const state = engine.tick(dt);
+
+    syncUIFromState(state);
+    update(state.time);
+
     requestAnimationFrame(animate);
 }
 
 // Start loop
 requestAnimationFrame(animate);
 
-// Initialize to UTC now
-const now = new Date();
-syncTimeControlsFromDate(now);
-simTime = now.getTime();
-syncBodyControls();
-update(dateToJulianDate(now));
-
-// Manual input handler
 const handleManualInput = () => {
-    console.log("handleManualInput called");
     const d = new Date(
         Date.UTC(
             parseInt(UI.inputs.time.year.value),
@@ -196,14 +161,15 @@ const handleManualInput = () => {
             parseInt(UI.inputs.time.day.value),
             ...UI.inputs.time.clockTime.value.split(":").map(Number),
         ),
-    );
-    simTime = d.getTime();
-    update(dateToJulianDate(d));
+    )
+    const jd = dateToJulianDate(d);
+
+    engine.updateState({ time: getDaysSinceJ2000(jd) });
+    // update() will be called by the animate loop automatically
 };
 
 initHorizonFetch((profile) => {
-    currentHorizonProfile = profile;
-    update();
+    engine.updateState({ horizonProfile: profile });
 });
 
 // Listeners
@@ -248,13 +214,38 @@ attachRecursive(UI.inputs, "change", handleManualInput);
 attachRecursive(UI.selects, "change", handleManualInput);
 
 for (const name of BODY_NAMES) {
-    UI.bodies[name].enabled.addEventListener("change", () => {
-        syncBodyControls();
-        update();
+    UI.bodies[name].enabled.addEventListener("change", (e) => {
+        const isEnabled = (e.target as HTMLInputElement).checked;
+
+        const bodiesUpdate = {
+            [name]: {
+                ...engine.getState().bodies[name],
+                enabled: isEnabled
+            }
+        } as Record<BodyName, BodyConfig>;
+        engine.updateState({
+            bodies: bodiesUpdate,
+        });
+
+        syncBodyControls(engine.getState());
+        update(engine.getState().time);
     });
-    UI.bodies[name].displayMode.addEventListener("change", () => {
-        syncBodyControls();
-        update();
+
+    UI.bodies[name].displayMode.addEventListener("change", (e) => {
+        const mode = (e.target as HTMLSelectElement).value as any;
+
+        const bodiesUpdate = {
+            [name]: {
+                ...engine.getState().bodies[name],
+                displayMode: mode
+            }
+        } as Record<BodyName, BodyConfig>;
+        engine.updateState({
+            bodies: bodiesUpdate
+        });
+
+        syncBodyControls(engine.getState());
+        update(engine.getState().time);
     });
 }
 
@@ -272,4 +263,23 @@ function attachRecursive(group: any, event: string, handler: EventListener) {
             attachRecursive(value, event, handler);
         }
     });
+}
+
+function syncUIFromState(state: SimulationState) {
+    // 1. Time
+    // Convert DaysSinceJ2000 back to Date for the UI helpers
+    const jd = state.time + 2451545.0;
+    const unixMs = (jd - 2440587.5) * 86400000;
+    const date = new Date(unixMs);
+    syncTimeControlsFromDate(date);
+
+    // 2. Observer Location
+    UI.inputs.location.lat.value = state.observer.latDeg.toFixed(6);
+    UI.inputs.location.lon.value = state.observer.lonDeg.toFixed(6);
+    UI.inputs.location.elev.value = state.observer.elevationAmsl.toString();
+
+    // 3. Route Slider (if in route mode)
+    if (state.isRouteMode) {
+        syncRouteUI(unixMs);
+    }
 }
