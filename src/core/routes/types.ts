@@ -11,7 +11,7 @@ export type RoutePoint = {
 export type RouteTrack = RoutePoint[];
 
 export type RoutePointRad = {
-    t: number;
+    timestampUtc: number;
     latRad: Radians;
     lonRad: Radians;
     label: string;
@@ -19,6 +19,7 @@ export type RoutePointRad = {
 };
 
 export type RoutePosition = {
+    timestampUtc: number;
     latDeg: Degrees;
     lonDeg: Degrees;
     label?: string;

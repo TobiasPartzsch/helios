@@ -18,8 +18,8 @@ import { applyEasterEgg } from "./ui/easteregg";
 import { BODY_NAMES, BodyName, getObserverState, syncBodyControls, syncTimeControlsFromDate, UI } from "./ui/elements";
 import { initHorizonFetch } from "./ui/horizonController";
 import { LensController } from "./ui/lensController";
-import { initRouteController } from "./ui/routeController";
-import { getPlaying, setPlaying } from "./ui/simulationController";
+import { handleLoadedRoute, initRouteController, updateObserverFromRoute } from "./ui/routeController";
+import { getIsRouteMode, getPlaying, setPlaying } from "./ui/simulationController";
 
 // Renderers
 const skyRenderer = new SkyRenderer(UI.canvas.main);
@@ -31,12 +31,17 @@ let currentHorizonProfile: HorizonProfile | null = null;
 let lastTimestamp = 0;
 let simTime = new Date(
     Date.UTC(
-        parseInt(UI.inputs.year.value),
-        parseInt(UI.inputs.month.value) - 1,
-        parseInt(UI.inputs.day.value),
-        ...UI.inputs.clockTime.value.split(":").map(Number),
+        parseInt(UI.inputs.time.year.value),
+        parseInt(UI.inputs.time.month.value) - 1,
+        parseInt(UI.inputs.time.day.value),
+        ...UI.inputs.time.clockTime.value.split(":").map(Number),
     ),
 ).getTime();
+export function getSimTime() { return simTime; }
+export function setSimTime(date: number) {
+    simTime = date;
+    // Any logic that MUST run whenever time changes goes here
+}
 
 // Planet names handled by the Kepler engine (excludes sun and moon)
 const PLANET_NAMES = BODY_NAMES.filter((n) => n !== "sun" && n !== "moon");
@@ -147,12 +152,24 @@ export function update(providedJd?: number) {
 function animate(timestamp: number) {
     if (getPlaying()) {
         const dt = timestamp - lastTimestamp;
-        const unit = parseFloat(UI.select.timeUnit.value);
-        const multiplier = parseFloat(UI.inputs.simSpeed.value);
-        UI.slider.speedVal.innerText = multiplier.toString();
+        const unit = parseFloat(UI.selects.timeUnit.value);
+        const multiplier = parseFloat(UI.inputs.settings.simSpeed.value);
+
+        // Advance Master Time
         simTime += dt * unit * multiplier;
         const date = new Date(simTime);
+
+        // 1. Update Time UI
         syncTimeControlsFromDate(date);
+
+        // 2. If in Route Mode, update Location and Slider
+        updateObserverFromRoute(simTime); // Call it regardless of mode
+        if (getIsRouteMode()) {
+            // We use the new helper in the controller
+            updateObserverFromRoute(simTime);
+        }
+
+        // 3. Trigger celestial engine update
         update(dateToJulianDate(date));
     }
     lastTimestamp = timestamp;
@@ -174,10 +191,10 @@ const handleManualInput = () => {
     console.log("handleManualInput called");
     const d = new Date(
         Date.UTC(
-            parseInt(UI.inputs.year.value),
-            parseInt(UI.inputs.month.value) - 1,
-            parseInt(UI.inputs.day.value),
-            ...UI.inputs.clockTime.value.split(":").map(Number),
+            parseInt(UI.inputs.time.year.value),
+            parseInt(UI.inputs.time.month.value) - 1,
+            parseInt(UI.inputs.time.day.value),
+            ...UI.inputs.time.clockTime.value.split(":").map(Number),
         ),
     );
     simTime = d.getTime();
@@ -191,7 +208,7 @@ initHorizonFetch((profile) => {
 
 // Listeners
 UI.buttons.play.onclick = () => setPlaying(!getPlaying());
-UI.inputs.simSpeed.addEventListener("input", (e) => {
+UI.inputs.settings.simSpeed.addEventListener("input", (e) => {
     const value = Number((e.target as HTMLInputElement).value);
     UI.slider.speedVal.innerText = String(value);
 
@@ -208,22 +225,27 @@ UI.inputs.simSpeed.addEventListener("input", (e) => {
 
 initRouteController(
     async (path) => {
-        const route = await loadRouteCsv(path);
-        // store route, refresh UI
+        try {
+            const csvText = await loadRouteCsv(path);
+            const route = parseRouteCsv(csvText);
+            handleLoadedRoute(route);
+        } catch (e) {
+            console.error("Failed to load route path:", e);
+        }
     },
     async (file) => {
-        const csv = await file.text();
-        const route = parseRouteCsv(csv);
-        // store route, refresh UI
+        try {
+            const csvText = await file.text();
+            const route = parseRouteCsv(csvText);
+            handleLoadedRoute(route);
+        } catch (e) {
+            console.error("Failed to parse uploaded file:", e);
+        }
     },
 );
 
-Object.values(UI.inputs).forEach(
-    (el) => el.addEventListener("change", handleManualInput),
-);
-Object.values(UI.select).forEach(
-    (el) => el.addEventListener("change", handleManualInput),
-);
+attachRecursive(UI.inputs, "change", handleManualInput);
+attachRecursive(UI.selects, "change", handleManualInput);
 
 for (const name of BODY_NAMES) {
     UI.bodies[name].enabled.addEventListener("change", () => {
@@ -233,5 +255,21 @@ for (const name of BODY_NAMES) {
     UI.bodies[name].displayMode.addEventListener("change", () => {
         syncBodyControls();
         update();
+    });
+}
+
+/**
+ * Recursively attaches a listener to all HTML elements 
+ * within a nested object structure.
+ */
+function attachRecursive(group: any, event: string, handler: EventListener) {
+    Object.values(group).forEach((value) => {
+        if (value instanceof HTMLElement) {
+            // It's a leaf node (Input, Select, etc.)
+            value.addEventListener(event, handler);
+        } else if (value && typeof value === 'object') {
+            // It's a nested group, dive deeper
+            attachRecursive(value, event, handler);
+        }
     });
 }

@@ -8,7 +8,7 @@ export function initHorizonFetch(
         // Destructure the parts of the UI we need for this function
         const { inputs, outputs, buttons } = UI;
 
-        const horizonId = inputs.horizonId.value.trim();
+        const horizonId = inputs.settings.horizonId.value.trim();
         if (!horizonId) return;
 
         // Lock UI and show status
@@ -20,9 +20,9 @@ export function initHorizonFetch(
             const profile = await fetchHorizonById(horizonId);
 
             // 3. Update Inputs from the metadata (The "Workaround" now hidden in the profile)
-            UI.inputs.lat.value = profile.observer.lat.toString();
-            UI.inputs.lon.value = profile.observer.lon.toString();
-            UI.inputs.elev.value = profile.observer.elev.toString();
+            UI.inputs.location.lat.value = profile.observer.lat.toString();
+            UI.inputs.location.lon.value = profile.observer.lon.toString();
+            UI.inputs.location.elev.value = profile.observer.elev.toString();
 
             UI.outputs.horizonStatus.innerText = `ID: ${profile.id} (${profile.points.length} pts)`;
             onProfileLoaded(profile);

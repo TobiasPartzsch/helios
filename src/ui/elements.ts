@@ -15,18 +15,35 @@ export const UI = {
         lens: document.getElementById("lens-canvas") as HTMLCanvasElement,
     },
     inputs: {
-        lat: document.getElementById("lat") as HTMLInputElement,
-        lon: document.getElementById("lon") as HTMLInputElement,
-        elev: document.getElementById("elevation") as HTMLInputElement,
-        year: document.getElementById("year") as HTMLInputElement,
-        month: document.getElementById("month") as HTMLInputElement,
-        day: document.getElementById("day") as HTMLInputElement,
-        clockTime: document.getElementById("clock-time") as HTMLInputElement,
-        horizonId: document.getElementById("horizon-id") as HTMLInputElement,
-        simSpeed: document.getElementById("sim-speed") as HTMLInputElement,
-        useSymbols: document.getElementById("use-symbols") as HTMLInputElement,
-        routeFile: document.getElementById("route-file") as HTMLInputElement,
-        routeFilePicker: document.getElementById("route-file-picker") as HTMLInputElement,
+        location: {
+            lat: document.getElementById("lat") as HTMLInputElement,
+            lon: document.getElementById("lon") as HTMLInputElement,
+            elev: document.getElementById("elevation") as HTMLInputElement,
+        },
+        time: {
+            year: document.getElementById("year") as HTMLInputElement,
+            month: document.getElementById("month") as HTMLInputElement,
+            day: document.getElementById("day") as HTMLInputElement,
+            clockTime: document.getElementById("clock-time") as HTMLInputElement,
+        },
+        settings: {
+            useSymbols: document.getElementById("use-symbols") as HTMLInputElement,
+            simSpeed: document.getElementById("sim-speed") as HTMLInputElement,
+            timeUnit: document.getElementById("time-unit") as HTMLSelectElement,
+            refraction: document.getElementById("refraction") as HTMLSelectElement,
+            horizonId: document.getElementById("horizon-id") as HTMLInputElement,
+        },
+        route: {
+            track: document.getElementById("route-track") as HTMLInputElement,
+            file: document.getElementById("route-file") as HTMLInputElement,
+            picker: document.getElementById("route-file-picker") as HTMLInputElement,
+        },
+    },
+    groups: {
+        observer: document.querySelector(".observer-controls") as HTMLElement,
+        time: document.querySelector(".time-input-row") as HTMLElement,
+        route: document.querySelector(".route-controls") as HTMLElement,
+        sourceModes: document.querySelectorAll('input[name="source-mode"]') as NodeListOf<HTMLInputElement>,
     },
     buttons: {
         fetchHorizon: document.getElementById("btn-fetch-horizon") as HTMLButtonElement,
@@ -51,7 +68,7 @@ export const UI = {
         neptune: document.getElementById("out-neptune") as HTMLElement,
         horizonStatus: document.getElementById("horizon-status") as HTMLElement,
     },
-    select: {
+    selects: {
         timeUnit: document.getElementById("time-unit") as HTMLSelectElement,
         refraction: document.getElementById("refraction") as HTMLSelectElement,
     },
@@ -72,16 +89,16 @@ export const UI = {
 
 export function getObserverState() {
     return {
-        latDeg: parseFloat(UI.inputs.lat.value),
-        lonDeg: parseFloat(UI.inputs.lon.value),
-        elevM: parseFloat(UI.inputs.elev.value),
-        refractionModel: UI.select.refraction.value as RefractionModel,
+        latDeg: parseFloat(UI.inputs.location.lat.value),
+        lonDeg: parseFloat(UI.inputs.location.lon.value),
+        elevM: parseFloat(UI.inputs.location.elev.value),
+        refractionModel: UI.selects.refraction.value as RefractionModel,
         date: new Date(
             Date.UTC(
-                parseInt(UI.inputs.year.value),
-                parseInt(UI.inputs.month.value) - 1,
-                parseInt(UI.inputs.day.value),
-                ...UI.inputs.clockTime.value.split(":").map(Number),
+                parseInt(UI.inputs.time.year.value),
+                parseInt(UI.inputs.time.month.value) - 1,
+                parseInt(UI.inputs.time.day.value),
+                ...UI.inputs.time.clockTime.value.split(":").map(Number),
             ),
         ),
         bodies: Object.fromEntries(
@@ -93,15 +110,15 @@ export function getObserverState() {
                 } satisfies BodyConfig,
             ]),
         ) as Record<BodyName, BodyConfig>,
-        useSymbols: UI.inputs.useSymbols?.checked ?? false,
+        useSymbols: UI.inputs.settings.useSymbols?.checked ?? false,
     };
 }
 
 export function syncTimeControlsFromDate(date: Date): void {
-    UI.inputs.year.value = date.getUTCFullYear().toString();
-    UI.inputs.month.value = (date.getUTCMonth() + 1).toString();
-    UI.inputs.day.value = date.getUTCDate().toString();
-    UI.inputs.clockTime.value = [date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()]
+    UI.inputs.time.year.value = date.getUTCFullYear().toString();
+    UI.inputs.time.month.value = (date.getUTCMonth() + 1).toString();
+    UI.inputs.time.day.value = date.getUTCDate().toString();
+    UI.inputs.time.clockTime.value = [date.getUTCHours(), date.getUTCMinutes(), date.getUTCSeconds()]
         .map((n) => String(n).padStart(2, "0"))
         .join(":");
 }

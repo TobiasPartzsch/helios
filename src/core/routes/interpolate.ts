@@ -40,6 +40,7 @@ export function interpolateRoute(points: RoutePoint[], timeMs: number): RoutePos
 
     if (a === b) {
         return {
+            timestampUtc: t,
             latDeg: a.latDeg,
             lonDeg: a.lonDeg,
             label: a.label,
@@ -53,6 +54,7 @@ export function interpolateRoute(points: RoutePoint[], timeMs: number): RoutePos
     const { latitudeRad: latRad, longitudeRad: lonRad } = cartesianToSpherical(vm);
 
     return {
+        timestampUtc: t,
         latDeg: radToDeg(latRad),
         lonDeg: radToDeg(lonRad),
         label: t < 0.5 ? a.label : b.label,

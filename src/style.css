@@ -139,7 +139,7 @@ body {
 }
 
 .speed-value {
-    min-width: 3ch;
+    min-width: 4ch;
     text-align: right;
 }
 
@@ -279,5 +279,27 @@ select:disabled {
 }
 
 #route-file {
-    width: 22rem;
+    width: 12rem;
+}
+
+.route-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    /* This allows the route section to grow and fill remaining space */
+    flex: 1 1 auto;
+    min-width: 200px;
+    /* Prevents it from squishing too small */
+}
+
+#route-track {
+    /* This makes the slider itself stretch to the container's width */
+    flex-grow: 1;
+    cursor: pointer;
+}
+
+#route-progress {
+    min-width: 4ch;
+    /* Keeps the percentage text from jumping */
+    text-align: right;
 }
