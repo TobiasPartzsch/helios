@@ -1,7 +1,7 @@
-import { interpolateRoute } from "../core/routes/interpolate";
+import { loadRouteCsv, parseRouteCsv } from "../core/routes/parseCsv";
 import { RoutePoint } from "../core/routes/types";
 import { engine } from "../core/simulation/instance";
-import { dateToJulianDate, getDaysSinceJ2000 } from "../core/time";
+import { dateToJulianDate, DaysSinceJ2000, getDaysSinceJ2000 } from "../core/time";
 import { UI } from "./elements";
 import { setRouteMode } from "./simulationController";
 
@@ -16,9 +16,27 @@ export function getRouteData() {
 }
 
 export function initRouteController(
-    onPathLoad: (path: string) => void,
-    onFileLoad: (file: File) => void,
 ) {
+    const processRoute = (csvText: string) => {
+        try {
+            const route = parseRouteCsv(csvText);
+            engine.setRoute(route);
+            handleLoadedRoute(route);
+        } catch (e) {
+            console.error("Failed to parse route:", e);
+        }
+    };
+
+    const onPathLoad = async (path: string) => {
+        const csv = await loadRouteCsv(path);
+        processRoute(csv);
+    };
+
+    const onFileLoad = async (file: File) => {
+        const csv = await file.text();
+        processRoute(csv);
+    };
+
     UI.buttons.browseRoute.onclick = () => UI.inputs.route.picker.click();
 
     UI.inputs.route.file.addEventListener("keydown", (e) => {
@@ -26,22 +44,20 @@ export function initRouteController(
             onPathLoad(UI.inputs.route.file.value.trim());
         }
     });
+
     UI.inputs.route.picker.addEventListener("change", () => {
         const file = UI.inputs.route.picker.files?.[0];
-        if (file) {
-            // 1. Sync the text display
-            UI.inputs.route.file.value = file.name;
+        if (!file) return;
 
-            // 2. Sync UI state if the radio is already checked
-            const routeRadio = document.querySelector('input[name="source-mode"][value="route"]') as HTMLInputElement;
-            if (routeRadio) {
-                setRouteMode(routeRadio.checked);
-            }
-
-            // 3. Trigger the data load (Only once!)
-            onFileLoad(file);
+        UI.inputs.route.file.value = file.name;
+        const routeRadio = document.querySelector('input[name="source-mode"][value="route"]') as HTMLInputElement;
+        if (routeRadio) {
+            setRouteMode(routeRadio.checked);
         }
+
+        onFileLoad(file);
     });
+
     UI.inputs.route.track.addEventListener("input", (e) => {
         const index = parseInt((e.target as HTMLInputElement).value);
         applyRoutePoint(index);
@@ -57,7 +73,7 @@ export function initRouteController(
     });
 }
 
-export function handleLoadedRoute(points: RoutePoint[]) {
+function handleLoadedRoute(points: RoutePoint[]) {
     loadedRoute = points;
 
     const track = UI.inputs.route.track;
@@ -103,52 +119,26 @@ function applyRoutePoint(index: number) {
 }
 
 /**
- * Called every frame by the main loop when in Route Mode.
- * Interpolates position and updates the UI fields + Slider.
- */
-export function updateObserverFromRoute(currentTimeMs: number) {
-    if (loadedRoute.length > 0) {
-        const pos = interpolateRoute(loadedRoute, currentTimeMs);
-
-        // Update Location UI
-        UI.inputs.location.lat.value = pos.latDeg.toFixed(4);
-        UI.inputs.location.lon.value = pos.lonDeg.toFixed(4);
-
-        // Sync the slider and percentage label
-        syncRouteUI(currentTimeMs);
-
-        // Future: engine.setObserverLocation(pos.latDeg, pos.lonDeg, 0);
-    }
-}
-
-/**
  * Synchronizes the Route Slider and Progress Label based on a timestamp.
  * This is the "single source of truth" for the voyage's visual progress.
  */
-export function syncRouteUI(currentTimeMs: number) {
+// src/ui/routeController.ts
+export function syncRouteUI(currentTimeDays: DaysSinceJ2000) {
     if (loadedRoute.length < 2) return;
 
-    const start = Date.parse(loadedRoute[0].timestampUtc);
-    const end = Date.parse(loadedRoute[loadedRoute.length - 1].timestampUtc);
+    // Convert route bounds to DaysSinceJ2000 (maybe cache these?)
+    const start = getDaysSinceJ2000(dateToJulianDate(new Date(loadedRoute[0].timestampUtc)));
+    const end = getDaysSinceJ2000(dateToJulianDate(new Date(loadedRoute[loadedRoute.length - 1].timestampUtc)));
 
-    // 1. Calculate Ratio (0.0 to 1.0)
-    const totalDuration = end - start;
-    const elapsed = currentTimeMs - start;
-    // We clamp to 0-1 to handle sim times outside the route's bounds
-    const ratio = Math.max(0, Math.min(1, elapsed / totalDuration));
+    const ratio = (currentTimeDays - start) / (end - start);
+    const clampedRatio = Math.max(0, Math.min(1, ratio));
 
-    // 2. Update Slider Position
     const track = UI.inputs.route.track;
-    const maxVal = parseInt(track.max) || 1000;
-    track.value = Math.floor(ratio * maxVal).toString();
+    track.value = Math.floor(clampedRatio * parseInt(track.max)).toString();
 
-    // 3. Update Percentage Label
-    const progressLabel = document.getElementById("route-progress");
-    if (progressLabel) {
-        progressLabel.textContent = `${Math.round(ratio * 100)}%`;
-    }
-    console.log("Syncing Slider:", ratio);
-
+    // Update the % label
+    const label = document.getElementById("route-progress");
+    if (label) label.textContent = `${Math.round(clampedRatio * 100)}%`;
 }
 
 UI.inputs.route.track.addEventListener("input", (e) => {

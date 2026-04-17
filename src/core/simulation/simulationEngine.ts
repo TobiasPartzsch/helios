@@ -2,7 +2,7 @@
 import { Degrees } from "../angles";
 import { interpolateRoute } from "../routes/interpolate";
 import { RoutePoint } from "../routes/types";
-import { asDaysSinceJ2000, DaysSinceJ2000 } from "../time/julian";
+import { asDaysSinceJ2000, DaysSinceJ2000, daysSinceJ2000ToUnixMs } from "../time/julian";
 import { SimulationState } from "../types";
 
 export class SimulationEngine {
@@ -45,9 +45,7 @@ export class SimulationEngine {
 
 
     private getUnixTimeMs(): number {
-        // Reverse of dateToJulianDate
-        const jd = this.state.time + 2451545.0;
-        return (jd - 2440587.5) * 86400000;
+        return daysSinceJ2000ToUnixMs(this.state.time);
     }
 
     public getState(): SimulationState {

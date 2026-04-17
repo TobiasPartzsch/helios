@@ -1,10 +1,10 @@
 import { moonEquatorialCoordinates } from "../core/bodies/moon";
 import { sunEquatorialCoordinates } from "../core/bodies/sun";
 import { EquatorialCoords, HorizontalCoords } from "../core/coordinates";
-import { RefractionModel } from "../core/coordinates/refraction";
 import { HorizonProfile } from "../core/horizon";
 import { planetGeocentricEquatorialCoordinates } from "../core/orbit/propagate";
 import { DaysSinceJ2000 } from "../core/time";
+import { RefractionModel } from "../core/types";
 import { BodyConfig, BodyDisplayMode, BodyName } from "../ui/elements";
 import {
     buildBodyTrackPath,
@@ -132,8 +132,8 @@ export class SkyRenderer {
         const bodyRenderer: BodyRenderer = useSymbols ? drawBodySymbol : drawBody;
 
         // Sun
-        if (sunHoriz && shouldDrawBody(bodies.sun.displayMode)) {
-            this.drawBody("sun", dims, sunHoriz, isSouthern, bodyRenderer, ctx)
+        if (bodies["sun"].enabled && shouldDrawBody(bodies.sun.displayMode)) {
+            this.drawBody("sun", dims, sunHoriz!, isSouthern, bodyRenderer, ctx)
         }
 
         // Moon
