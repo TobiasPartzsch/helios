@@ -1,4 +1,4 @@
-import { BodyName } from "./elements";
+import { BODY_NAMES, BodyName, UI } from "./elements";
 
 let easterEggApplied = false;
 
@@ -24,14 +24,17 @@ export function applyEasterEgg(date: Date): void {
     if (shouldApply === easterEggApplied) return;
     easterEggApplied = shouldApply;
 
-    for (const [name, sailor] of Object.entries(SAILOR_NAMES) as [BodyName, { ja: string; tooltip: string }][]) {
-        const label = document.querySelector(`label[for="body-${name}-enabled"]`) as HTMLElement;
+    for (const name of BODY_NAMES) {
+        const bodyUI = UI.bodies[name];
+        const label = bodyUI.label;
         if (!label) continue;
 
+        const sailor = SAILOR_NAMES[name];
+
         if (shouldApply) {
-            ORIGINAL_NAMES[name] = label.textContent ?? name;  // store before overwriting
-            label.textContent = sailor.ja;
-            label.title = sailor.tooltip;
+            ORIGINAL_NAMES[name] = label.textContent ?? name;
+            label.textContent = sailor!.ja;
+            label.title = sailor!.tooltip;
         } else {
             label.textContent = ORIGINAL_NAMES[name] ?? name;
             label.title = "";

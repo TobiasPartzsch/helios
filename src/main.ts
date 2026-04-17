@@ -3,7 +3,7 @@ import { daysSinceJ2000ToUnixMs } from "./core/time/julian";
 import { updateTelemetryAndRender } from "./render/orchestrator";
 import "./style.css";
 import { initBodyController } from "./ui/bodyController";
-import { syncBodyControls } from "./ui/elements";
+import { syncBodyControls, UI } from "./ui/elements";
 import { initHorizonFetch } from "./ui/horizonController";
 import { initLocationController, syncLocationUI } from "./ui/locationController";
 import { initRouteController, syncRouteUI } from "./ui/routeController";
@@ -45,9 +45,8 @@ function animate(timestamp: number) {
 // Boot Sequence (The "Initial Handshake")
 const initialState = engine.getState();
 
-const routeRadio = document.querySelector('input[name="source-mode"][value="route"]') as HTMLInputElement;
-const isCurrentlyRoute = routeRadio?.checked ?? false;
-console.log(isCurrentlyRoute)
+const isCurrentlyRoute = UI.inputs.route.modeRoute?.checked ?? false;
+engine.updateState({ isRouteMode: isCurrentlyRoute });
 
 syncBodyControls(initialState);
 requestAnimationFrame(animate);

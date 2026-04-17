@@ -6,6 +6,8 @@ import { UI } from "./elements";
 import { setRouteMode } from "./simulationController";
 
 let loadedRoute: RoutePoint[] = [];
+let cachedRouteStartDays: number | null = null;
+let cachedRouteEndDays: number | null = null;
 
 export function hasRouteData() {
     return loadedRoute.length > 0
@@ -50,9 +52,8 @@ export function initRouteController(
         if (!file) return;
 
         UI.inputs.route.file.value = file.name;
-        const routeRadio = document.querySelector('input[name="source-mode"][value="route"]') as HTMLInputElement;
-        if (routeRadio) {
-            setRouteMode(routeRadio.checked);
+        if (UI.inputs.route.modeRoute) {
+            setRouteMode(UI.inputs.route.modeRoute.checked);
         }
 
         onFileLoad(file);
@@ -63,11 +64,9 @@ export function initRouteController(
         applyRoutePoint(index);
     });
 
-    document.querySelectorAll('input[name="source-mode"]').forEach(radio => {
+    UI.inputs.route.modeRadios.forEach(radio => {
         radio.addEventListener("change", (e) => {
-            const input = e.target as HTMLInputElement;
-            const isRoute = (input.value === 'route');
-
+            const isRoute = (radio.value === 'route');
             setRouteMode(isRoute);
         });
     });
@@ -75,6 +74,15 @@ export function initRouteController(
 
 function handleLoadedRoute(points: RoutePoint[]) {
     loadedRoute = points;
+    if (points.length >= 2) {
+        const startJD = dateToJulianDate(new Date(points[0].timestampUtc));
+        const endJD = dateToJulianDate(new Date(points[points.length - 1].timestampUtc));
+        cachedRouteStartDays = getDaysSinceJ2000(startJD);
+        cachedRouteEndDays = getDaysSinceJ2000(endJD);
+    } else {
+        cachedRouteStartDays = null;
+        cachedRouteEndDays = null;
+    }
 
     const track = UI.inputs.route.track;
     track.disabled = false; // Force enable just in case
@@ -82,8 +90,7 @@ function handleLoadedRoute(points: RoutePoint[]) {
     track.max = (points.length - 1).toString();
     track.value = "0";
 
-    const progressLabel = document.getElementById("route-progress");
-    if (progressLabel) progressLabel.textContent = "0%";
+    UI.outputs.routeProgress.textContent = "0%"
 
     applyRoutePoint(0);
 }
@@ -96,11 +103,8 @@ function applyRoutePoint(index: number) {
     UI.inputs.location.lon.value = point.lonDeg.toFixed(6);
     UI.inputs.location.elev.value = "0";
 
-    const progressLabel = document.getElementById("route-progress");
-    if (progressLabel) {
-        const progress = Math.round((index / (loadedRoute.length - 1)) * 100);
-        progressLabel.textContent = `${progress}%`;
-    }
+    const progress = Math.round((index / (loadedRoute.length - 1)) * 100);
+    UI.outputs.routeProgress.textContent = `${progress}%`;
 
     console.log(`Moving to: ${point.latDeg}, ${point.lonDeg} at ${point.timestampUtc}`);
 
@@ -124,21 +128,18 @@ function applyRoutePoint(index: number) {
  */
 // src/ui/routeController.ts
 export function syncRouteUI(currentTimeDays: DaysSinceJ2000) {
-    if (loadedRoute.length < 2) return;
+    if (!cachedRouteStartDays || !cachedRouteEndDays) return;
 
     // Convert route bounds to DaysSinceJ2000 (maybe cache these?)
-    const start = getDaysSinceJ2000(dateToJulianDate(new Date(loadedRoute[0].timestampUtc)));
-    const end = getDaysSinceJ2000(dateToJulianDate(new Date(loadedRoute[loadedRoute.length - 1].timestampUtc)));
-
-    const ratio = (currentTimeDays - start) / (end - start);
-    const clampedRatio = Math.max(0, Math.min(1, ratio));
+    const totalDuration = cachedRouteEndDays - cachedRouteStartDays;
+    const elapsed = currentTimeDays - cachedRouteStartDays;
+    const ratio = Math.max(0, Math.min(1, elapsed / totalDuration));
 
     const track = UI.inputs.route.track;
-    track.value = Math.floor(clampedRatio * parseInt(track.max)).toString();
+    track.value = Math.floor(ratio * parseInt(track.max)).toString();
 
     // Update the % label
-    const label = document.getElementById("route-progress");
-    if (label) label.textContent = `${Math.round(clampedRatio * 100)}%`;
+    UI.outputs.routeProgress.textContent = `${Math.round(ratio * 100)}%`;
 }
 
 UI.inputs.route.track.addEventListener("input", (e) => {

@@ -37,6 +37,9 @@ export const UI = {
             track: document.getElementById("route-track") as HTMLInputElement,
             file: document.getElementById("route-file") as HTMLInputElement,
             picker: document.getElementById("route-file-picker") as HTMLInputElement,
+            modeHorizon: document.querySelector('input[name="source-mode"][value="horizon"]') as HTMLInputElement,
+            modeRoute: document.querySelector('input[name="source-mode"][value="route"]') as HTMLInputElement,
+            modeRadios: document.querySelectorAll('input[name="source-mode"]') as NodeListOf<HTMLInputElement>,
         },
     },
     groups: {
@@ -67,6 +70,7 @@ export const UI = {
         uranus: document.getElementById("out-uranus") as HTMLElement,
         neptune: document.getElementById("out-neptune") as HTMLElement,
         horizonStatus: document.getElementById("horizon-status") as HTMLElement,
+        routeProgress: document.getElementById("route-progress") as HTMLElement,
     },
     selects: {
         timeUnit: document.getElementById("time-unit") as HTMLSelectElement,
@@ -74,6 +78,7 @@ export const UI = {
     },
     slider: {
         speedVal: document.getElementById("speed-val") as HTMLElement,
+        routeTrack: document.getElementById("route-track") as HTMLElement,
     },
     bodies: Object.fromEntries(
         BODY_NAMES.map((name) => [
