@@ -85,8 +85,9 @@ Solar and lunar rendering still use lightweight direct models suitable for visua
 - Invariant tests cover core math, time, coordinate, refraction, and orbit helper transformations
 
 ## Next Steps by priority
-- **Further Performance Optimization:** While the main update loop and path rendering have been optimized (pinned RA/Dec, reduced sampling), the Zoom lens remains a heavy operation. Investigate moving path generation to a Web Worker or implementing a more aggressive caching layer for the SkyRenderState."
-- **Draw by distance:** Currently we draw bodies in an arbitrary order. We should probably go from farthest to closest.
+- **Lens Controller Optimization:** The zoom lens remains the heaviest operation. Investigate caching the offscreen sky render or throttle updates during rapid mouse movement.
+- **State Transition Refinement:** Improve the "wonky" feeling when switching between Horizon and Route modes while the simulation is playing. Ensure a clean "hand-off" of observer coordinates.
+- **Automated Playback Logic:** Implement logic to prevent "Play" execution if a route is selected but no CSV is loaded, or provide a default "stationary" behavior.- **Draw by distance:** Currently we draw bodies in an arbitrary order. We should probably go from farthest to closest.
 - **Eclipse refinement:** Move from candidate detection toward better event characterization and presentation.
 - **More general conjunction/plane-crossing pattern:** Reuse the current Moon-Sun logic for other phenomena such as planetary conjunctions and transits.
 - **Voyage Mode**: Import a CSV waypoint list (`timestamp_utc, lat, lon, elev_m`) and animate observer 

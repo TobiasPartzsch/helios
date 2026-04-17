@@ -197,9 +197,30 @@
 - Drastically improved UI and Zoom responsiveness by reducing the "Self Time" of the main `update()` function.
 
 ### Travel Route Loading and Replay Foundations
-
 - Added route CSV parsing and typed route points for travel replay data.
 - Added spherical/cartesian helpers and spherical interpolation for smooth ground-track motion.
 - Added route loading from file picker or path input.
 - Introduced route mode UI groundwork and mutual exclusion with horizon profiles.
 - Added route/horizon mode selection and route import controls in the UI.
+
+## Recent Progress
+- Migrated master time from Unix ms to branded DaysSinceJ2000.
+- Centralized application state into a SimulationEngine to ensure unidirectional data flow.
+- Decoupled DOM inputs from the render loop via syncUIFromState.
+- Unified 4D route interpolation with the simulation master clock.
+
+## Recent Progress
+### Architectural Migration (Engine/Controller Pattern)
+- Simulation Engine: Encapsulated simulation state and time-stepping logic into a standalone SimulationEngine class, enabling a "Single Source of Truth."
+- Modular Controllers: Decoupled main.ts by delegating DOM events and input validation to specialized controllers (Time, Location, Body, Route, Simulation).
+- Orchestration: Refactored the main loop into a lightweight orchestrator that manages the tick-sync-render pipeline, improving maintainability and reducing logic leakage.
+- Input Protection: Implemented focus-aware UI synchronization to prevent the engine from overwriting user inputs during active editing.
+
+### Voyage Mode & 4D Routing
+- Engine-Level Interpolation: Moved 4D route interpolation into the core engine tick, allowing for smooth observer motion during playback.
+- UI Synchronization: Linked the route progress slider and telemetry directly to the engine's Julian timeline.
+- Data Persistence: Integrated CSV route loading with the internal state, allowing for seamless transitions between stationary "Horizon" mode and mobile "Route" mode.
+
+### Quick optimization and refactor
+- cache points in routeController
+- use elements.UI objects instead of document lookups
