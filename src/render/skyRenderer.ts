@@ -125,7 +125,7 @@ export class SkyRenderer {
             if (!bodies[name].enabled || !shouldDrawPath(bodies[name].displayMode)) continue;
             this.drawTrack(
                 name, daysSinceJ2000, latRad, lonRad, dims, isSouthern, refractionModel,
-                (t) => planetGeocentricEquatorialCoordinates(name, daysSinceJ2000), ctx
+                (t) => planetGeocentricEquatorialCoordinates(name, t), ctx
             );
         }
 

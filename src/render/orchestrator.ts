@@ -98,7 +98,6 @@ export function updateTelemetryAndRender(state: SimulationState) {
     outputs.eot.innerText = formatEoT(eotHours);
     UI.outputs.jd.innerText = fullJD.toFixed(5);
 
-
     // 4. Final Render Call
     const renderState: SkyRenderState = {
         daysSinceJ2000, latRad, lonRad,
