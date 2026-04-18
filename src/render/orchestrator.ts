@@ -24,7 +24,6 @@ const moonFaceRenderer = new MoonFaceRenderer(UI.canvas.moonFace);
 const lensController = new LensController();
 
 export function updateTelemetryAndRender(state: SimulationState) {
-    const start = performance.now();
     const { time: daysSinceJ2000, observer, bodies, refractionModel } = state;
     const { outputs } = UI;
 
@@ -33,13 +32,7 @@ export function updateTelemetryAndRender(state: SimulationState) {
     const lonRad = degToRad(observer.lonDeg);
     const lstRad = localSiderealTimeRad(daysSinceJ2000, lonRad);
 
-    // // 1. Core Math (Pure Functions)
-    // const unixMs = (daysSinceJ2000 + 2451545.0 - 2440587.5) * 86400000;
-    // const date = new Date(unixMs);
-    // const lmtHours = calculateLMTFromDays(unixMs, observer.lonDeg);
-    // const eotHours = calculateEoT(lmtHours, sunHourAngle(time, lstRad));
-
-    // 2. Celestial Calculations (Sun, Moon, Planets)
+    // Celestial Calculations (Sun, Moon, Planets)
     // Sun needs to always be processed
     const sunEq = sunEquatorialCoordinates(daysSinceJ2000);
     const sunHoriz = equatorialToHorizontal(sunEq, latRad, lstRad, state.refractionModel);
@@ -51,12 +44,6 @@ export function updateTelemetryAndRender(state: SimulationState) {
         ? `${formatAltAz(sunHoriz)} | ${formatEclipseInfo("Solar cand.", solarEclipse.longitudeErrorDeg, solarEclipse.eclipticLatitudeDeg)}`
         : formatAltAz(sunHoriz);
     outputs.sun.title = formatRaDec(sunEq);
-
-
-    // const utcHours = date.getUTCHours() + date.getUTCMinutes() / 60 + date.getUTCSeconds() / 3600;
-    // const lmtHours = ((utcHours + state.observer.lonDeg / 15.0) % 24 + 24) % 24;
-    // const eotHours = lmtHours - 12 - (radToHours(sunHourAngleRad));
-    // outputs.eot.innerText = formatEoT(eotHours);
 
     // Moon
     let moonHoriz = null;
@@ -125,11 +112,6 @@ export function updateTelemetryAndRender(state: SimulationState) {
     };
     skyRenderer.render(renderState);
     lensController.setRenderState(renderState);
-
-    const end = performance.now();
-    if (end - start > 16) {
-        console.warn(`Slow frame: ${(end - start).toFixed(2)}ms`);
-    }
 }
 
 function formatAltAz(horiz: HorizontalCoords): string {

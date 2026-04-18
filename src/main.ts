@@ -21,6 +21,10 @@ initHorizonFetch((profile) => engine.updateState({ horizonProfile: profile }));
 let lastTimestamp = 0;
 
 function animate(timestamp: number) {
+    requestAnimationFrame(animate);
+
+    const start = performance.now();
+
     if (!lastTimestamp) lastTimestamp = timestamp;
     const dt = timestamp - lastTimestamp;
     lastTimestamp = timestamp;
@@ -39,7 +43,10 @@ function animate(timestamp: number) {
     // Perform Math & Rendering
     updateTelemetryAndRender(state);
 
-    requestAnimationFrame(animate);
+    const end = performance.now();
+    if (end - start > 16) {
+        console.warn(`Slow frame: ${(end - start).toFixed(2)}ms`);
+    }
 }
 
 // Boot Sequence (The "Initial Handshake")
