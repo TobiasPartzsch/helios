@@ -1,10 +1,11 @@
 import { degToRad } from "../core/angles";
 import { EquatorialCoords } from "../core/coordinates";
-import { RefractionModel } from "../core/coordinates/refraction";
 import { equatorialToHorizontal } from "../core/coordinates/transforms";
 import { HorizonProfile } from "../core/horizon";
 import { HALF_PI, PI, TWO_PI } from "../core/math";
 import { DaysSinceJ2000, localSiderealTimeRad } from "../core/time";
+import { RefractionModel } from "../core/types";
+import { Viewport } from "./types";
 
 export interface CanvasDimensions {
     width: number;
@@ -58,10 +59,15 @@ export function drawBody(
     x: number,
     y: number,
     radius: number,
-    color: string
+    color: string,
+    symbol?: string,
+    viewport?: Viewport,
 ) {
+    const pos = { x, y };
+    if (viewport && !isInViewport(pos, viewport)) return;
+    const drawPos = applyViewport(pos, viewport);
     ctx.beginPath();
-    ctx.arc(x, y, radius, 0, TWO_PI);
+    ctx.arc(drawPos.x, drawPos.y, radius, 0, TWO_PI);
     ctx.fillStyle = color;
     ctx.fill();
 }
@@ -72,20 +78,25 @@ export function drawBodySymbol(
     size: number,
     color: string,
     symbol?: string,
+    viewport?: Viewport,
 ): void {
+    const pos = { x, y };
+    if (viewport && !isInViewport(pos, viewport)) return;
+    const drawPos = applyViewport(pos, viewport);
     ctx.save();
     ctx.fillStyle = color;
     ctx.font = `${size * 6}px serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(symbol ?? "?", x, y);
+    ctx.fillText(symbol ?? "?", drawPos.x, drawPos.y);
     ctx.restore();
 }
 
 export function drawGrid(
     ctx: CanvasRenderingContext2D,
     dimensions: { width: number, height: number },
-    isSouthern: boolean
+    isSouthern: boolean,
+    viewport?: Viewport,
 ) {
     const { width, height } = dimensions;
 
@@ -98,13 +109,14 @@ export function drawGrid(
     // Every 30 degrees from -90 to 90
     for (let altDeg = -90; altDeg <= 90; altDeg += 30) {
         const altRad = degToRad(altDeg);
-        const y = altToY(altRad, height);
-
+        const worldY = altToY(altRad, height);
+        const topLeft = applyViewport({ x: 0, y: worldY }, viewport);
+        const topRight = applyViewport({ x: width, y: worldY }, viewport);
         ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
+        ctx.moveTo(topLeft.x, topLeft.y);
+        ctx.lineTo(topRight.x, topRight.y);
         ctx.stroke();
-        ctx.fillText(`${altDeg}°`, 5, y - 2);
+        ctx.fillText(`${altDeg}°`, 5, topLeft.y - 2);
     }
 
     // 2. Draw Azimuth Lines (Meridians)
@@ -112,11 +124,12 @@ export function drawGrid(
         const azRad = degToRad(azDeg);
 
         // Pass 0 for altitude as we only need the horizontal (X) position
-        const { x } = getEquirectangularXY(azRad, 0, dimensions, isSouthern);
-
+        const worldX = getEquirectangularXY(azRad, 0, dimensions, isSouthern).x;
+        const top = applyViewport({ x: worldX, y: 0 }, viewport);
+        const bottom = applyViewport({ x: worldX, y: height }, viewport);
         ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
+        ctx.moveTo(top.x, top.y);
+        ctx.lineTo(bottom.x, bottom.y);
         ctx.stroke();
 
         const label = getCardinalLabel(azDeg);
@@ -129,7 +142,7 @@ export function drawGrid(
             const pad = 0;
             // Clamp so label never bleeds off either edge
             const halfLabel = metrics.width / 2
-            const lx = Math.max(halfLabel, Math.min(width - halfLabel, x));
+            const lx = Math.max(halfLabel, Math.min(width - halfLabel, bottom.x));
             const ly = height - 18;
             ctx.fillStyle = "rgba(0,0,0,0.6)";
             ctx.fillRect(lx - halfLabel - pad, ly - pad, metrics.width + pad * 2, 16);
@@ -160,7 +173,7 @@ export function buildBodyTrackPath(
     isSouthern: boolean,
     getEqCoords: (daysSinceJ2000: DaysSinceJ2000) => EquatorialCoords,
     config: TrackConfig,
-    refractionModel: RefractionModel = 'none',
+    refractionModel: RefractionModel = RefractionModel.None,
 ): Path2D {
     const { windowDays, sampleIntervalDays: stepInDays } = config;
     const steps = Math.floor(windowDays / stepInDays);
@@ -315,4 +328,25 @@ export function drawHorizon(
 
 function altToY(altRad: number, height: number): number {
     return height * (1 - (altRad + HALF_PI) / PI);
+}
+
+function applyViewport(
+    pos: { x: number; y: number },
+    viewport?: Viewport,
+): { x: number; y: number } {
+    if (!viewport) return pos;
+
+    return {
+        x: (pos.x - viewport.left) * viewport.zoom,
+        y: (pos.y - viewport.top) * viewport.zoom,
+    };
+}
+
+function isInViewport(pos: { x: number; y: number }, viewport: Viewport, padding = 0): boolean {
+    return (
+        pos.x >= viewport.left - padding &&
+        pos.x <= viewport.left + viewport.width + padding &&
+        pos.y >= viewport.top - padding &&
+        pos.y <= viewport.top + viewport.height + padding
+    );
 }

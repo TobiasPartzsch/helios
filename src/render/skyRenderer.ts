@@ -1,11 +1,10 @@
 import { moonEquatorialCoordinates } from "../core/bodies/moon";
 import { sunEquatorialCoordinates } from "../core/bodies/sun";
 import { EquatorialCoords, HorizontalCoords } from "../core/coordinates";
-import { HorizonProfile } from "../core/horizon";
 import { planetGeocentricEquatorialCoordinates } from "../core/orbit/propagate";
 import { DaysSinceJ2000 } from "../core/time";
 import { RefractionModel } from "../core/types";
-import { BodyConfig, BodyDisplayMode, BodyName } from "../ui/elements";
+import { BodyDisplayMode, BodyName } from "../ui/elements";
 import {
     buildBodyTrackPath,
     drawBody,
@@ -16,8 +15,17 @@ import {
     strokeBodyTrack,
     TrackConfig,
 } from "./skyCanvas";
+import { SkyRenderState, Viewport } from "./types";
 
-type BodyRenderer = (ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, symbol?: string) => void;
+type BodyRenderer = (
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    size: number,
+    color: string,
+    symbol?: string,
+    viewport?: Viewport,
+) => void;
 
 const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
     sun: { windowDays: 1.0, sampleIntervalDays: 1 / 144, color: "#ffa500", size: 10, symbol: "☉" },  // 10-minute steps
@@ -31,20 +39,6 @@ const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
     neptune: { windowDays: 1, sampleIntervalDays: 1 / 72, color: "#5b7fdb", size: 4, symbol: "♆" },  // orbit 60190
 };
 
-
-
-export interface SkyRenderState {
-    daysSinceJ2000: DaysSinceJ2000;
-    latRad: number;
-    lonRad: number;
-    sunHoriz?: HorizontalCoords;
-    moonHoriz?: HorizontalCoords;
-    planetHorizMap: Partial<Record<BodyName, HorizontalCoords>>;
-    bodies: Record<BodyName, BodyConfig>;
-    horizonProfile: HorizonProfile | null;
-    refractionModel: RefractionModel;
-    useSymbols: boolean;
-}
 
 export class SkyRenderer {
     private ctx: CanvasRenderingContext2D;
@@ -83,6 +77,7 @@ export class SkyRenderer {
             refractionModel,
             useSymbols }: SkyRenderState,
         explicitDims?: { width: number; height: number },
+        viewport?: Viewport,
     ): void {
         const dims = explicitDims ?? this.syncResolution();
         const isSouthern = latRad < 0;

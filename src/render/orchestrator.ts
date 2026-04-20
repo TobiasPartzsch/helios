@@ -15,7 +15,8 @@ import { applyEasterEgg } from "../ui/easteregg";
 import { BODY_NAMES, BodyName, UI } from "../ui/elements";
 import { LensController } from "../ui/lensController";
 import { MoonFaceRenderer } from "./moonFaceRenderer";
-import { SkyRenderer, SkyRenderState } from "./skyRenderer";
+import { SkyRenderer } from "./skyRenderer";
+import { SkyRenderState } from "./types";
 
 const PLANET_NAMES = BODY_NAMES.filter((n) => n !== "sun" && n !== "moon");
 

@@ -1,4 +1,5 @@
-import { SkyRenderState, SkyRenderer } from "../render/skyRenderer";
+import { SkyRenderer } from "../render/skyRenderer";
+import { SkyRenderState } from "../render/types";
 import { UI } from "./elements";
 
 interface LensState {
