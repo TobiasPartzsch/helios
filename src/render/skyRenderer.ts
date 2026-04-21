@@ -15,12 +15,11 @@ import {
     strokeBodyTrack,
     TrackConfig,
 } from "./skyCanvas";
-import { SkyRenderState, Viewport } from "./types";
+import { SkyRenderState, Viewport, WorldPoint } from "./types";
 
 type BodyRenderer = (
     ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
+    pos: WorldPoint,
     size: number,
     color: string,
     symbol?: string,
@@ -42,10 +41,14 @@ const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
 
 export class SkyRenderer {
     private ctx: CanvasRenderingContext2D;
-    private trackCache: Map<string, Path2D> = new Map();
-    private lastTrackDays: number = NaN;
+    private trackCacheFull: Map<string, Path2D> = new Map();
+    private trackCacheLens: Map<string, Path2D> = new Map();
     private readonly TRACK_RECOMPUTE_THRESHOLD = 1 / 24; // 1 hour
     private lastDims: { width: number; height: number } = { width: 0, height: 0 };
+    private lastFullBucket: number = NaN;
+    private lastLensBucket: number = NaN;
+    private lastLensViewport: Viewport | null = null;
+    private lensCacheMargin = 1.0; // meaning 50% extra
 
     constructor(canvas: HTMLCanvasElement) {
         this.ctx = canvas.getContext("2d")!;
@@ -85,16 +88,32 @@ export class SkyRenderer {
         const canvas = ctx.canvas;
 
         const dimsChanged = dims.width !== this.lastDims.width || dims.height !== this.lastDims.height;
-        const needsRecompute = dimsChanged || Math.abs(daysSinceJ2000 - this.lastTrackDays) > this.TRACK_RECOMPUTE_THRESHOLD;
+        let fullNeedsRecompute = dimsChanged;
+        let lensNeedsRecompute = dimsChanged;
 
-        if (needsRecompute) {
-            this.trackCache.clear();
-            this.lastTrackDays = daysSinceJ2000;
+        const hours = daysSinceJ2000 * 24;
+        const fullBucket = Math.floor(hours);
+        const lensBucket = Math.floor(hours + 0.5);
+
+        fullNeedsRecompute = fullNeedsRecompute || fullBucket !== this.lastFullBucket;
+        lensNeedsRecompute = lensNeedsRecompute || lensBucket !== this.lastLensBucket;
+
+        if (fullNeedsRecompute) {
+            this.trackCacheFull.clear();
+            this.lastFullBucket = fullBucket;
+        }
+
+        if (lensNeedsRecompute) {
+            this.trackCacheLens.clear();
+            this.lastLensBucket = lensBucket;
+        }
+
+        if (dimsChanged) {
             this.lastDims = { ...dims };
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawGrid(ctx, dims, isSouthern);
+        drawGrid(ctx, dims, isSouthern, viewport);
 
         // Horizon line
         ctx.strokeStyle = "#333";
@@ -104,23 +123,32 @@ export class SkyRenderer {
         ctx.stroke();
 
         if (horizonProfile) {
-            drawHorizon(ctx, horizonProfile, dims, isSouthern);
+            drawHorizon(ctx, horizonProfile, dims, isSouthern, viewport);
         }
 
         // Tracks
         if (bodies.sun.enabled && shouldDrawPath(bodies.sun.displayMode)) {
-            this.drawTrack("sun", daysSinceJ2000, latRad, lonRad, dims, isSouthern, refractionModel, sunEquatorialCoordinates, ctx);
+            this.drawTrack(
+                "sun", daysSinceJ2000, latRad, lonRad, dims, isSouthern,
+                refractionModel, sunEquatorialCoordinates,
+                ctx, viewport,
+            );
         }
 
         if (bodies.moon.enabled && shouldDrawPath(bodies.moon.displayMode)) {
-            this.drawTrack("moon", daysSinceJ2000, latRad, lonRad, dims, isSouthern, refractionModel, moonEquatorialCoordinates, ctx);
+            this.drawTrack(
+                "moon", daysSinceJ2000, latRad, lonRad, dims, isSouthern,
+                refractionModel, moonEquatorialCoordinates,
+                ctx, viewport,
+            );
         }
 
         for (const [name] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
             if (!bodies[name].enabled || !shouldDrawPath(bodies[name].displayMode)) continue;
             this.drawTrack(
                 name, daysSinceJ2000, latRad, lonRad, dims, isSouthern, refractionModel,
-                (t) => planetGeocentricEquatorialCoordinates(name, t), ctx
+                (t) => planetGeocentricEquatorialCoordinates(name, t),
+                ctx, viewport,
             );
         }
 
@@ -128,18 +156,18 @@ export class SkyRenderer {
 
         // Sun
         if (bodies["sun"].enabled && shouldDrawBody(bodies.sun.displayMode)) {
-            this.drawBody("sun", dims, sunHoriz!, isSouthern, bodyRenderer, ctx)
+            this.drawBody("sun", dims, sunHoriz!, isSouthern, bodyRenderer, ctx, viewport)
         }
 
         // Moon
         if (moonHoriz && shouldDrawBody(bodies.moon.displayMode)) {
-            this.drawBody("moon", dims, moonHoriz, isSouthern, bodyRenderer, ctx)
+            this.drawBody("moon", dims, moonHoriz, isSouthern, bodyRenderer, ctx, viewport)
         }
 
         // Planets
         for (const [name, horiz] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
             if (!bodies[name].enabled || !shouldDrawBody(bodies[name].displayMode)) continue;
-            this.drawBody(name, dims, horiz, isSouthern, bodyRenderer, ctx)
+            this.drawBody(name, dims, horiz, isSouthern, bodyRenderer, ctx, viewport)
         }
     }
 
@@ -153,18 +181,19 @@ export class SkyRenderer {
         refractionModel: RefractionModel,
         coordFn: (daysSinceJ2000: DaysSinceJ2000) => EquatorialCoords,
         ctx: CanvasRenderingContext2D,
+        viewport?: Viewport,
     ): void {
         const track = BODY_TRACKS[name];
         if (!track) return;
 
-        if (!this.trackCache.has(name)) {
-            this.trackCache.set(name, buildBodyTrackPath(
+        if (!this.trackCacheFull.has(name)) {
+            this.trackCacheFull.set(name, buildBodyTrackPath(
                 daysSinceJ2000, latRad, lonRad, dims, isSouthern,
                 coordFn, track, refractionModel
             ));
         }
 
-        strokeBodyTrack(ctx, this.trackCache.get(name)!, track.color);
+        strokeBodyTrack(ctx, this.trackCacheFull.get(name)!, track.color);
     }
 
     private drawBody(
@@ -174,13 +203,14 @@ export class SkyRenderer {
         isSouthern: boolean,
         bodyRenderer: BodyRenderer,
         ctx: CanvasRenderingContext2D,
+        viewport?: Viewport,
     ): void {
         const track = BODY_TRACKS[name];
         if (!track) return;
 
         const { color, size, symbol } = track;
         const pos = getEquirectangularXY(horizontalCoords.azimuthRad, horizontalCoords.altitudeRad, dims, isSouthern);
-        bodyRenderer(ctx, pos.x, pos.y, size, color, symbol);
+        bodyRenderer(ctx, pos, size, color, symbol, viewport);
     }
 }
 

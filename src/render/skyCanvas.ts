@@ -5,7 +5,8 @@ import { HorizonProfile } from "../core/horizon";
 import { HALF_PI, PI, TWO_PI } from "../core/math";
 import { DaysSinceJ2000, localSiderealTimeRad } from "../core/time";
 import { RefractionModel } from "../core/types";
-import { Viewport } from "./types";
+import { Viewport, WorldPoint, WorldX, WorldY } from "./types";
+import { mapWorldPoint, pointInWorldRect, worldToScreen } from "./viewport";
 
 export interface CanvasDimensions {
     width: number;
@@ -29,7 +30,7 @@ export function getEquirectangularXY(
     altitudeRad: number,
     dimensions: { width: number, height: number },
     isSouthern: boolean = false
-): { x: number, y: number } {
+): WorldPoint {
     const { width, height } = dimensions;
 
     // To center South (180°), we shift the azimuth 
@@ -51,21 +52,20 @@ export function getEquirectangularXY(
     // Y-axis: Altitude PI/2 (top) to -PI/2 (bottom)
     const y = altToY(altitudeRad, height);
 
-    return { x, y };
+    return { x, y } as WorldPoint;
 }
 
 export function drawBody(
     ctx: CanvasRenderingContext2D,
-    x: number,
-    y: number,
+    pos: WorldPoint,
     radius: number,
     color: string,
     symbol?: string,
     viewport?: Viewport,
 ) {
-    const pos = { x, y };
-    if (viewport && !isInViewport(pos, viewport)) return;
-    const drawPos = applyViewport(pos, viewport);
+    if (viewport && !pointInWorldRect(pos, viewport.world)) return;
+    const drawPos = viewport ? worldToScreen(pos, viewport) : pos;
+
     ctx.beginPath();
     ctx.arc(drawPos.x, drawPos.y, radius, 0, TWO_PI);
     ctx.fillStyle = color;
@@ -74,15 +74,15 @@ export function drawBody(
 
 export function drawBodySymbol(
     ctx: CanvasRenderingContext2D,
-    x: number, y: number,
+    pos: WorldPoint,
     size: number,
     color: string,
     symbol?: string,
     viewport?: Viewport,
 ): void {
-    const pos = { x, y };
-    if (viewport && !isInViewport(pos, viewport)) return;
-    const drawPos = applyViewport(pos, viewport);
+    if (viewport && !pointInWorldRect(pos, viewport.world)) return;
+    const drawPos = viewport ? worldToScreen(pos, viewport) : pos;
+
     ctx.save();
     ctx.fillStyle = color;
     ctx.font = `${size * 6}px serif`;
@@ -107,30 +107,31 @@ export function drawGrid(
 
     // 1. Draw Altitude Lines (Parallels)
     // Every 30 degrees from -90 to 90
+    ctx.beginPath();
     for (let altDeg = -90; altDeg <= 90; altDeg += 30) {
         const altRad = degToRad(altDeg);
         const worldY = altToY(altRad, height);
-        const topLeft = applyViewport({ x: 0, y: worldY }, viewport);
-        const topRight = applyViewport({ x: width, y: worldY }, viewport);
-        ctx.beginPath();
-        ctx.moveTo(topLeft.x, topLeft.y);
-        ctx.lineTo(topRight.x, topRight.y);
-        ctx.stroke();
-        ctx.fillText(`${altDeg}°`, 5, topLeft.y - 2);
+
+        const left = mapWorldPoint(0 as WorldX, worldY, viewport);
+        const right = mapWorldPoint(width as WorldX, worldY, viewport);
+
+        ctx.moveTo(left.x, left.y);
+        ctx.lineTo(right.x, right.y);
+        ctx.fillText(`${altDeg}°`, 5, left.y - 2);
     }
+    ctx.stroke();
 
     // 2. Draw Azimuth Lines (Meridians)
+    ctx.beginPath();
     for (let azDeg = 0; azDeg < 360; azDeg += 45) {
         const azRad = degToRad(azDeg);
-
-        // Pass 0 for altitude as we only need the horizontal (X) position
         const worldX = getEquirectangularXY(azRad, 0, dimensions, isSouthern).x;
-        const top = applyViewport({ x: worldX, y: 0 }, viewport);
-        const bottom = applyViewport({ x: worldX, y: height }, viewport);
-        ctx.beginPath();
+
+        const top = mapWorldPoint(worldX, 0 as WorldY, viewport);
+        const bottom = mapWorldPoint(worldX, height as WorldY, viewport);
+
         ctx.moveTo(top.x, top.y);
         ctx.lineTo(bottom.x, bottom.y);
-        ctx.stroke();
 
         const label = getCardinalLabel(azDeg);
         if (label) {
@@ -152,6 +153,8 @@ export function drawGrid(
             ctx.restore();
         }
     }
+    ctx.stroke();
+
 }
 
 function getCardinalLabel(az: number): string | null {
@@ -291,62 +294,42 @@ export function drawHorizon(
     ctx: CanvasRenderingContext2D,
     profile: HorizonProfile,
     dimensions: { width: number, height: number },
-    isSouthern: boolean
+    isSouthern: boolean,
+    viewport?: Viewport,
 ) {
     const { points } = profile;
     if (points.length === 0) return;
 
-    ctx.save(); // Protect the global state
+    ctx.save();
     ctx.beginPath();
-
-    // Use our design tokens (or hardcoded for now until we refactor colors)
     ctx.strokeStyle = "#4ade80";
     ctx.lineWidth = 2;
     ctx.lineJoin = "round";
 
-    points.forEach((pt, index) => {
-        const pos = getEquirectangularXY(pt.azimuthRad, pt.altitudeRad, dimensions, isSouthern);
+    let lastPos: WorldPoint | null = null;
 
-        if (index === 0) {
-            ctx.moveTo(pos.x, pos.y);
+    for (const pt of points) {
+        const worldPos = getEquirectangularXY(pt.azimuthRad, pt.altitudeRad, dimensions, isSouthern);
+        const drawPos = viewport ? worldToScreen(worldPos, viewport) : worldPos;
+
+        if (!lastPos) {
+            ctx.moveTo(drawPos.x, drawPos.y);
         } else {
-            // Check for wrap-around jump at the canvas edges (width/2 threshold)
-            const lastPoint = points[index - 1];
-            const lastPos = getEquirectangularXY(lastPoint.azimuthRad, lastPoint.altitudeRad, dimensions, isSouthern);
-
-            if (Math.abs(pos.x - lastPos.x) > dimensions.width / 2) {
-                ctx.moveTo(pos.x, pos.y);
+            // same wrap logic, but compare in world space
+            if (Math.abs(worldPos.x - lastPos.x) > dimensions.width / 2) {
+                ctx.moveTo(drawPos.x, drawPos.y);
             } else {
-                ctx.lineTo(pos.x, pos.y);
+                ctx.lineTo(drawPos.x, drawPos.y);
             }
         }
-    });
+
+        lastPos = worldPos;
+    }
 
     ctx.stroke();
     ctx.restore();
 }
 
-function altToY(altRad: number, height: number): number {
-    return height * (1 - (altRad + HALF_PI) / PI);
-}
-
-function applyViewport(
-    pos: { x: number; y: number },
-    viewport?: Viewport,
-): { x: number; y: number } {
-    if (!viewport) return pos;
-
-    return {
-        x: (pos.x - viewport.left) * viewport.zoom,
-        y: (pos.y - viewport.top) * viewport.zoom,
-    };
-}
-
-function isInViewport(pos: { x: number; y: number }, viewport: Viewport, padding = 0): boolean {
-    return (
-        pos.x >= viewport.left - padding &&
-        pos.x <= viewport.left + viewport.width + padding &&
-        pos.y >= viewport.top - padding &&
-        pos.y <= viewport.top + viewport.height + padding
-    );
+function altToY(altRad: number, height: number): WorldY {
+    return height * (1 - (altRad + HALF_PI) / PI) as WorldY;
 }
