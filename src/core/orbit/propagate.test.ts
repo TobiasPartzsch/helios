@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { degToRad, radToDeg } from "../angles";
+import { degToRad, Radians, radToDeg } from "../angles";
 import { eclipticCartesianToEquatorial, sphericalToCartesian, subtractCartesian } from "../coordinates/transforms";
 import { angularDifferenceDeg, } from "../math";
 import { DaysSinceJ2000, J2000_EPOCH } from "../time";
@@ -28,7 +28,7 @@ describe("planetEquatorialCoordinates", () => {
 
 describe("orbit helpers", () => {
     it("converts spherical ecliptic coordinates on the x-axis to cartesian", () => {
-        const [x, y, z] = sphericalToCartesian(0, 0, 1);
+        const [x, y, z] = sphericalToCartesian(0 as Radians, 0 as Radians, 1);
 
         expect(x).toBeCloseTo(1, 12);
         expect(y).toBeCloseTo(0, 12);
@@ -36,7 +36,7 @@ describe("orbit helpers", () => {
     });
 
     it("converts spherical ecliptic coordinates on the y-axis to cartesian", () => {
-        const [x, y, z] = sphericalToCartesian(degToRad(90), 0, 1);
+        const [x, y, z] = sphericalToCartesian(degToRad(90), 0 as Radians, 1);
 
         expect(x).toBeCloseTo(0, 12);
         expect(y).toBeCloseTo(1, 12);
@@ -44,7 +44,7 @@ describe("orbit helpers", () => {
     });
 
     it("converts spherical ecliptic coordinates at the north pole to cartesian", () => {
-        const [x, y, z] = sphericalToCartesian(0, degToRad(90), 1);
+        const [x, y, z] = sphericalToCartesian(0 as Radians, degToRad(90), 1);
 
         expect(x).toBeCloseTo(0, 12);
         expect(y).toBeCloseTo(0, 12);

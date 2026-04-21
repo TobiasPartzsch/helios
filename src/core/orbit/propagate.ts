@@ -9,7 +9,7 @@ export const MEAN_OBLIQUITY_J2000_DEG = 23.439291111;
 export const OBLIQUITY_DEG_PER_CENTURY = 0.013004167;
 
 
-export function heliocentricSphericalCoords(name: string, daysSinceJ2000: DaysSinceJ2000): [number, number, number] {
+export function heliocentricSphericalCoords(name: string, daysSinceJ2000: DaysSinceJ2000): [Radians, Radians, Radians] {
     return vsop87(name, daysSinceJ2000);
 }
 

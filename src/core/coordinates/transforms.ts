@@ -3,7 +3,8 @@ import { degToRad, Radians } from "../angles";
 import { normalizeRad } from "../math";
 import { MEAN_OBLIQUITY_J2000_DEG, OBLIQUITY_DEG_PER_CENTURY } from "../orbit/propagate";
 import { DaysSinceJ2000, JULIAN_CENTURY } from "../time";
-import { applyRefraction, RefractionModel } from "./refraction";
+import { RefractionModel } from "../types";
+import { applyRefraction } from "./refraction";
 
 export type Vec3 = [number, number, number];
 
@@ -34,9 +35,9 @@ export function cartesianToSpherical([x, y, z]: Vec3): { longitudeRad: Radians, 
  */
 export function equatorialToHorizontal(
     eq: EquatorialCoords,
-    latitudeRad: number,
-    localSiderealTimeRad: number,
-    refractionModel: RefractionModel = 'none'
+    latitudeRad: Radians,
+    localSiderealTimeRad: Radians,
+    refractionModel: RefractionModel = RefractionModel.None
 ): HorizontalCoords {
     const { rightAscensionRad: ra, declinationRad: dec } = eq;
 

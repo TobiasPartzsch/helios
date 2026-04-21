@@ -1,3 +1,4 @@
+import { Radians } from "../core/angles";
 import { HorizontalCoords } from "../core/coordinates";
 import { HorizonProfile } from "../core/horizon";
 import { DaysSinceJ2000 } from "../core/time";
@@ -12,8 +13,8 @@ export interface Viewport {
 
 export interface SkyRenderState {
     daysSinceJ2000: DaysSinceJ2000;
-    latRad: number;
-    lonRad: number;
+    latRad: Radians;
+    lonRad: Radians;
     sunHoriz?: HorizontalCoords;
     moonHoriz?: HorizontalCoords;
     planetHorizMap: Partial<Record<BodyName, HorizontalCoords>>;

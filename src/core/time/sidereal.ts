@@ -1,3 +1,4 @@
+import { Degrees, Radians } from "../angles";
 import { normalizeRad } from "../math";
 
 export function julianDateToGMSTHours(jd: number): number {
@@ -18,7 +19,7 @@ export function julianDateToGMSTHours(jd: number): number {
     return gmst;
 }
 
-export function longitudeDegToSiderealHours(longitudeDeg: number): number {
+export function longitudeDegToSiderealHours(longitudeDeg: Degrees): number {
     return longitudeDeg / 15.0;
 }
 
@@ -27,7 +28,7 @@ export function longitudeDegToSiderealHours(longitudeDeg: number): number {
  * @param daysSinceJ2000 Days since 2000-01-01 12:00:00 UTC
  * @param longitudeRad Observer's longitude in radians (East positive)
  */
-export function localSiderealTimeRad(daysSinceJ2000: number, longitudeRad: number): number {
+export function localSiderealTimeRad(daysSinceJ2000: number, longitudeRad: Radians): Radians {
     // GMST at J2000 was approx 18.697 hours. In radians:
     const gmstBaseRad = 4.894961212735792;
     // The Earth rotates approx 1.0027379 times per solar day
@@ -36,5 +37,5 @@ export function localSiderealTimeRad(daysSinceJ2000: number, longitudeRad: numbe
     const gmstRad = gmstBaseRad + rotationRateRadPerDay * daysSinceJ2000;
 
     // LST = GMST + Longitude
-    return normalizeRad(gmstRad + longitudeRad);
+    return normalizeRad(gmstRad + longitudeRad) as Radians;
 }

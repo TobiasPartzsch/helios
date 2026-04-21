@@ -1,8 +1,8 @@
-import { degToRad } from "./angles";
+import { Degrees, degToRad, Radians } from "./angles";
 
 export interface HorizonPoint {
-    azimuthRad: number;
-    altitudeRad: number;
+    azimuthRad: Radians;
+    altitudeRad: Radians;
 }
 
 export interface HorizonProfile {
@@ -10,8 +10,8 @@ export interface HorizonProfile {
     name?: string;
     points: HorizonPoint[];
     observer: {
-        lat: number;
-        lon: number;
+        lat: Degrees;
+        lon: Degrees;
         elev: number;
     };
 }
@@ -28,11 +28,11 @@ export async function fetchHorizonById(id: string): Promise<HorizonProfile> {
     const data = await response.json();
     const rawPoints = data.horizon || [];
 
-    // 1. Harvest Metadata (The "Workaround" sanitized into the Core)
+    // 1. Harvest Metadata
     const firstPt = rawPoints[0] || {};
     const observer = {
-        lat: parseFloat(data.lat || firstPt.lat || "0"),
-        lon: parseFloat(data.lon || firstPt.lon || "0"),
+        lat: parseFloat(data.lat || firstPt.lat || "0") as Degrees,
+        lon: parseFloat(data.lon || firstPt.lon || "0") as Degrees,
         elev: parseFloat(data.elev || firstPt.elev || "0")
     };
 

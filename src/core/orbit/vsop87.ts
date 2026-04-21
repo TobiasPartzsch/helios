@@ -1,3 +1,4 @@
+import { Radians } from "../angles";
 import { normalizeRad } from "../math";
 import { DaysSinceJ2000, JULIAN_CENTURY } from "../time/julian";
 import { VSOP87_DATA } from "./vsop87Data";
@@ -10,16 +11,16 @@ function evaluateSeries(series: PlanetSeries[keyof PlanetSeries], tau: number): 
         , 0);
 }
 
-export function vsop87(name: string, daysSinceJ2000: DaysSinceJ2000): [number, number, number] {
+export function vsop87(name: string, daysSinceJ2000: DaysSinceJ2000): [Radians, Radians, Radians] {
     const data = VSOP87_DATA[name];
     if (!data) throw new Error(`Unknown planet: ${name}`);
 
     const T = daysSinceJ2000 / JULIAN_CENTURY;
     const tau = T / 10;
 
-    const L = normalizeRad(evaluateSeries(data.L, tau));
-    const B = evaluateSeries(data.B, tau);
-    const R = evaluateSeries(data.R, tau);
+    const L = normalizeRad(evaluateSeries(data.L, tau)) as Radians;
+    const B = evaluateSeries(data.B, tau) as Radians;
+    const R = evaluateSeries(data.R, tau) as Radians;
 
     return [L, B, R];
 }

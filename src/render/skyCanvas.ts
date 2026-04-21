@@ -1,4 +1,4 @@
-import { degToRad } from "../core/angles";
+import { Degrees, degToRad, Radians } from "../core/angles";
 import { EquatorialCoords } from "../core/coordinates";
 import { equatorialToHorizontal } from "../core/coordinates/transforms";
 import { HorizonProfile } from "../core/horizon";
@@ -26,8 +26,8 @@ export interface TrackConfig {
  * using an Equirectangular projection.
  */
 export function getEquirectangularXY(
-    azimuthRad: number,
-    altitudeRad: number,
+    azimuthRad: Radians,
+    altitudeRad: Radians,
     dimensions: { width: number, height: number },
     isSouthern: boolean = false
 ): WorldPoint {
@@ -125,7 +125,7 @@ export function drawGrid(
     ctx.beginPath();
     for (let azDeg = 0; azDeg < 360; azDeg += 45) {
         const azRad = degToRad(azDeg);
-        const worldX = getEquirectangularXY(azRad, 0, dimensions, isSouthern).x;
+        const worldX = getEquirectangularXY(azRad, 0 as Radians, dimensions, isSouthern).x;
 
         const top = mapWorldPoint(worldX, 0 as WorldY, viewport);
         const bottom = mapWorldPoint(worldX, height as WorldY, viewport);
@@ -133,7 +133,7 @@ export function drawGrid(
         ctx.moveTo(top.x, top.y);
         ctx.lineTo(bottom.x, bottom.y);
 
-        const label = getCardinalLabel(azDeg);
+        const label = getCardinalLabel(azDeg as Degrees);
         if (label) {
             ctx.save();
             ctx.textAlign = "center";
@@ -157,7 +157,7 @@ export function drawGrid(
 
 }
 
-function getCardinalLabel(az: number): string | null {
+function getCardinalLabel(az: Degrees): string | null {
     if (az === 0 || az === 360) return 'N';
     if (az === 90) return 'E';
     if (az === 180) return 'S';
@@ -170,8 +170,8 @@ function getCardinalLabel(az: number): string | null {
  */
 export function buildBodyTrackPath(
     daysSinceJ2000: DaysSinceJ2000,
-    latRad: number,
-    lonRad: number,
+    latRad: Radians,
+    lonRad: Radians,
     dimensions: { width: number, height: number },
     isSouthern: boolean,
     getEqCoords: (daysSinceJ2000: DaysSinceJ2000) => EquatorialCoords,
@@ -239,8 +239,8 @@ export function strokeBodyTrack(ctx: CanvasRenderingContext2D, path: Path2D, col
 export function drawMoonFace(
     ctx: CanvasRenderingContext2D,
     fraction: number,
-    sunHoriz: { azimuthRad: number, altitudeRad: number },
-    moonHoriz: { azimuthRad: number, altitudeRad: number }
+    sunHoriz: { azimuthRad: Radians, altitudeRad: Radians },
+    moonHoriz: { azimuthRad: Radians, altitudeRad: Radians }
 ) {
     const { width, height } = ctx.canvas;
     const centerX = width / 2;

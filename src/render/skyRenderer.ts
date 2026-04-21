@@ -1,3 +1,4 @@
+import { Radians } from "../core/angles";
 import { moonEquatorialCoordinates } from "../core/bodies/moon";
 import { sunEquatorialCoordinates } from "../core/bodies/sun";
 import { EquatorialCoords, HorizontalCoords } from "../core/coordinates";
@@ -174,8 +175,8 @@ export class SkyRenderer {
     private drawTrack(
         name: BodyName,
         daysSinceJ2000: DaysSinceJ2000,
-        latRad: number,
-        lonRad: number,
+        latRad: Radians,
+        lonRad: Radians,
         dims: { width: number; height: number },
         isSouthern: boolean,
         refractionModel: RefractionModel,

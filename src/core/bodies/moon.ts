@@ -168,22 +168,22 @@ export function moonEclipticCoordinates(daysSinceJ2000: DaysSinceJ2000): Eclipti
 
     const twoMeanElongationRad = 2 * moonMeanElongationRad;
 
-    let longitudeRad =
+    const longitudeRad = normalizeRad(
         moonMeanLongitudeRad +
         MOON_LONGITUDE_TERMS_RAD.equationOfCenter * Math.sin(moonMeanAnomalyRad) +
         MOON_LONGITUDE_TERMS_RAD.evection * Math.sin(twoMeanElongationRad - moonMeanAnomalyRad) +
         MOON_LONGITUDE_TERMS_RAD.variation * Math.sin(twoMeanElongationRad) +
         MOON_LONGITUDE_TERMS_RAD.secondHarmonic * Math.sin(2 * moonMeanAnomalyRad) +
-        MOON_LONGITUDE_TERMS_RAD.annualEquation * Math.sin(sunMeanAnomalyRad);
-
-    longitudeRad = normalizeRad(longitudeRad);
+        MOON_LONGITUDE_TERMS_RAD.annualEquation * Math.sin(sunMeanAnomalyRad)
+    ) as Radians;
 
     // 3. Compute Latitude (beta)
-    const latitudeRad =
+    const latitudeRad = (
         MOON_LATITUDE_TERMS_RAD.primary * Math.sin(moonArgumentOfLatitudeRad) +
         MOON_LATITUDE_TERMS_RAD.plus * Math.sin(moonMeanAnomalyRad + moonArgumentOfLatitudeRad) +
         MOON_LATITUDE_TERMS_RAD.minus * Math.sin(moonMeanAnomalyRad - moonArgumentOfLatitudeRad) +
-        MOON_LATITUDE_TERMS_RAD.evectionLike * Math.sin(twoMeanElongationRad - moonArgumentOfLatitudeRad);
+        MOON_LATITUDE_TERMS_RAD.evectionLike * Math.sin(twoMeanElongationRad - moonArgumentOfLatitudeRad)
+    ) as Radians;
 
     return {
         longitudeRad,

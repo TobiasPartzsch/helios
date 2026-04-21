@@ -11,6 +11,6 @@ export interface HorizontalCoords {
 }
 
 export interface EclipticCoords {
-    longitudeRad: number;
-    latitudeRad: number;
+    longitudeRad: Radians;
+    latitudeRad: Radians;
 }
