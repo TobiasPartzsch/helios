@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { degToRad, radToDeg } from "../angles";
+import { RefractionModel } from "../types";
 import type { EquatorialCoords } from "./index";
 import { cartesianToSpherical, equatorialToHorizontal, normalizeVec3, slerpVec, sphericalToCartesian, Vec3 } from "./transforms";
 
@@ -91,7 +92,7 @@ describe("coordinates: equatorialToHorizontal", () => {
             declinationRad: degToRad(20),
         };
 
-        const withExplicitNone = equatorialToHorizontal(eq, latRad, lstRad, "none");
+        const withExplicitNone = equatorialToHorizontal(eq, latRad, lstRad, RefractionModel.None);
         const withDefault = equatorialToHorizontal(eq, latRad, lstRad);
 
         expect(withExplicitNone.altitudeRad).toBeCloseTo(withDefault.altitudeRad, 12);
