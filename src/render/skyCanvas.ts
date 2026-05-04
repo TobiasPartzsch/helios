@@ -452,34 +452,57 @@ export function drawHorizon(
     isSouthern: boolean,
     viewport?: Viewport,
 ) {
-    // TODO: handle viewport correctly
-    if (viewport) return;
     const { points } = profile;
     if (points.length === 0) return;
 
     ctx.save();
     ctx.beginPath();
-    ctx.strokeStyle = "#4ade80";
+    ctx.strokeStyle = "#4ade80"; // Your neon horizon green
     ctx.lineWidth = 2;
-    ctx.lineJoin = "round";
 
     let lastPos: WorldPoint | null = null;
+    let wasVisible = false;
 
     for (const pt of points) {
-        const worldPos = getEquirectangularXY(pt.azimuthRad, pt.altitudeRad, dimensions, isSouthern);
-        const drawPos = viewport ? worldToScreen(worldPos, viewport) : worldPos;
+        // 1. Get the point in our stable 3600-unit world
+        const worldPos = getEquirectangularXY(
+            pt.azimuthRad,
+            pt.altitudeRad,
+            dimensions,
+            isSouthern,
+            !!viewport // Use Virtual if lens is active
+        );
 
-        if (!lastPos) {
-            ctx.moveTo(drawPos.x, drawPos.y);
-        } else {
-            // same wrap logic, but compare in world space
-            if (Math.abs(worldPos.x - lastPos.x) > dimensions.width / 2) {
+        if (viewport) {
+            // 2. Check if the point is within the lens view
+            const visible = pointInWorldRect(worldPos, viewport.world);
+
+            if (!visible) {
+                wasVisible = false;
+                continue;
+            }
+
+            // 3. Project to the lens's physical pixels
+            const drawPos = worldToScreen(worldPos, viewport);
+
+            if (!wasVisible) {
                 ctx.moveTo(drawPos.x, drawPos.y);
             } else {
                 ctx.lineTo(drawPos.x, drawPos.y);
             }
+            wasVisible = true;
+        } else {
+            // Main Canvas Logic (Existing wrap-around handling)
+            if (!lastPos) {
+                ctx.moveTo(worldPos.x, worldPos.y);
+            } else {
+                if (Math.abs(worldPos.x - lastPos.x) > dimensions.width / 2) {
+                    ctx.moveTo(worldPos.x, worldPos.y);
+                } else {
+                    ctx.lineTo(worldPos.x, worldPos.y);
+                }
+            }
         }
-
         lastPos = worldPos;
     }
 
