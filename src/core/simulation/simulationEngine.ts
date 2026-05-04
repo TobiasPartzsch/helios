@@ -1,8 +1,8 @@
-// src/core/simulation/engine.ts
 import { Degrees } from "../angles";
 import { interpolateRoute } from "../routes/interpolate";
 import { RoutePoint } from "../routes/types";
-import { asDaysSinceJ2000, DaysSinceJ2000, daysSinceJ2000ToUnixMs } from "../time/julian";
+import { asDaysSinceJ2000, daysSinceJ2000ToUnixMs } from "../time/julian";
+import { DaysSinceJ2000, DeltaMs } from "../time/types";
 import { SimulationState } from "../types";
 
 export class SimulationEngine {
@@ -17,7 +17,7 @@ export class SimulationEngine {
         this.route = points;
     }
 
-    public tick(dtMs: number): SimulationState {
+    public tick(dtMs: DeltaMs): SimulationState {
         if (this.state.isPaused) return this.state;
 
         // dtMs is real-world wall clock time

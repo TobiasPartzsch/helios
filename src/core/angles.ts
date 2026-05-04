@@ -1,5 +1,5 @@
 import * as MathUtils from "./math";
-import { DaysSinceJ2000 } from "./time/julian";
+import { DaysSinceJ2000 } from "./time/types";
 
 export type Radians = number & { readonly __brand: "Radians" };
 export type Degrees = number & { readonly __brand: "Degrees" };

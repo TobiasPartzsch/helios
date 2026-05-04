@@ -2,7 +2,8 @@ import type { EquatorialCoords, HorizontalCoords } from ".";
 import { degToRad, Radians } from "../angles";
 import { normalizeRad } from "../math";
 import { MEAN_OBLIQUITY_J2000_DEG, OBLIQUITY_DEG_PER_CENTURY } from "../orbit/propagate";
-import { DaysSinceJ2000, JULIAN_CENTURY } from "../time";
+import { JULIAN_CENTURY } from "../time";
+import { DaysSinceJ2000 } from "../time/types";
 import { RefractionModel } from "../types";
 import { applyRefraction } from "./refraction";
 
@@ -75,7 +76,7 @@ export function eclipticCartesianToEquatorial(
     x: number,
     y: number,
     z: number,
-    daysSinceJ2000: DaysSinceJ2000
+    daysSinceJ2000: DaysSinceJ2000,
 ): EquatorialCoords {
     const T = daysSinceJ2000 / JULIAN_CENTURY;
     const eps = degToRad(MEAN_OBLIQUITY_J2000_DEG - OBLIQUITY_DEG_PER_CENTURY * T);

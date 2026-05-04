@@ -3,7 +3,7 @@ import { moonEquatorialCoordinates } from "../core/bodies/moon";
 import { sunEquatorialCoordinates } from "../core/bodies/sun";
 import { EquatorialCoords, HorizontalCoords } from "../core/coordinates";
 import { planetGeocentricEquatorialCoordinates } from "../core/orbit/propagate";
-import { DaysSinceJ2000 } from "../core/time";
+import { DaysSinceJ2000 } from "../core/time/types";
 import { RefractionModel } from "../core/types";
 import { BodyDisplayMode, BodyName } from "../ui/elements";
 import {
@@ -16,7 +16,8 @@ import {
     strokeBodyTrack,
     TrackConfig,
 } from "./skyCanvas";
-import { SkyRenderState, Viewport, WorldPoint } from "./types";
+import { ScreenHeight, ScreenRect, ScreenWidth, ScreenX, ScreenY, SkyRenderState, Viewport, WorldPoint, WorldRect } from "./types";
+import { containsWorldRect, expandWorldRect } from "./viewport";
 
 type BodyRenderer = (
     ctx: CanvasRenderingContext2D,
@@ -45,56 +46,89 @@ export class SkyRenderer {
     private trackCacheFull: Map<string, Path2D> = new Map();
     private trackCacheLens: Map<string, Path2D> = new Map();
     private readonly TRACK_RECOMPUTE_THRESHOLD = 1 / 24; // 1 hour
-    private lastDims: { width: number; height: number } = { width: 0, height: 0 };
-    private lastFullBucket: number = NaN;
-    private lastLensBucket: number = NaN;
-    private lastLensViewport: Viewport | null = null;
-    private lensCacheMargin = 1.0; // meaning 50% extra
+    private lastDims: ScreenRect = {
+        left: 0 as ScreenX,
+        top: 0 as ScreenY,
+        right: 0 as ScreenX,
+        bottom: 0 as ScreenY,
+    };
+    private lastFullBucket: DaysSinceJ2000 = 0 as DaysSinceJ2000;
+    private lastLensBucket: DaysSinceJ2000 = 0 as DaysSinceJ2000;
+    private lastCachedWorldRect: WorldRect | null = null;
+    private LENS_CACHE_MARGIN = 0.5;
 
     constructor(canvas: HTMLCanvasElement) {
         this.ctx = canvas.getContext("2d")!;
     }
 
-    private syncResolution(): { width: number; height: number } {
+    private syncResolution(): { width: ScreenWidth; height: ScreenHeight } {
         const canvas = this.ctx.canvas;
         if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
             canvas.width = canvas.clientWidth;
             canvas.height = canvas.clientHeight;
         }
-        return { width: canvas.width, height: canvas.height };
+        return { width: canvas.width as ScreenWidth, height: canvas.height as ScreenHeight };
     }
 
-    static forOffscreen(width: number, height: number): { renderer: SkyRenderer; canvas: HTMLCanvasElement } {
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        return { renderer: new SkyRenderer(canvas), canvas };
-    }
+    // static forOffscreen(width: number, height: number): { renderer: SkyRenderer; canvas: HTMLCanvasElement } {
+    //     const canvas = document.createElement("canvas");
+    //     canvas.width = width;
+    //     canvas.height = height;
+    //     return { renderer: new SkyRenderer(canvas), canvas };
+    // }
 
     render(
-        {
+        state: SkyRenderState,
+        explicitDims?: { width: ScreenWidth; height: ScreenHeight },
+        viewport?: Viewport,
+    ): void {
+        const {
             daysSinceJ2000,
             latRad, lonRad,
             sunHoriz, moonHoriz, planetHorizMap,
             bodies,
             horizonProfile,
             refractionModel,
-            useSymbols }: SkyRenderState,
-        explicitDims?: { width: number; height: number },
-        viewport?: Viewport,
-    ): void {
+            useSymbols } = state;
         const dims = explicitDims ?? this.syncResolution();
         const isSouthern = latRad < 0;
         const ctx = this.ctx;
         const canvas = ctx.canvas;
 
-        const dimsChanged = dims.width !== this.lastDims.width || dims.height !== this.lastDims.height;
+        const currentRect: ScreenRect = {
+            left: 0 as ScreenX,
+            top: 0 as ScreenY,
+            right: 0 + dims.width as ScreenX,
+            bottom: 0 + dims.height as ScreenY,
+        };
+
+        if (this.shouldRefreshFullCache(daysSinceJ2000, currentRect)) {
+            this.trackCacheFull.clear();
+            this.lastFullBucket = daysSinceJ2000;
+            this.lastDims = { ...currentRect };
+        }
+
+        if (viewport && this.shouldRefreshLensCache(viewport, daysSinceJ2000, currentRect)) {
+            this.trackCacheLens.clear();
+            this.lastLensBucket = daysSinceJ2000;
+            this.lastDims = currentRect;
+            // Update the "Sliding Window" buffer
+            this.lastCachedWorldRect = expandWorldRect(viewport.world, 1 + this.LENS_CACHE_MARGIN * 2);
+        }
+
+        const currentWidth = dims.width;
+        const currentHeight = dims.height;
+
+        const lastWidth = this.lastDims.right - this.lastDims.left;
+        const lastHeight = this.lastDims.bottom - this.lastDims.top;
+
+        const dimsChanged = currentWidth !== lastWidth || currentHeight !== lastHeight;
+
         let fullNeedsRecompute = dimsChanged;
         let lensNeedsRecompute = dimsChanged;
 
-        const hours = daysSinceJ2000 * 24;
-        const fullBucket = Math.floor(hours);
-        const lensBucket = Math.floor(hours + 0.5);
+        const fullBucket = (Math.floor(daysSinceJ2000 * 24) / 24) as DaysSinceJ2000;
+        const lensBucket = (Math.floor((daysSinceJ2000 + (0.5 / 24)) * 24) / 24) as DaysSinceJ2000;
 
         fullNeedsRecompute = fullNeedsRecompute || fullBucket !== this.lastFullBucket;
         lensNeedsRecompute = lensNeedsRecompute || lensBucket !== this.lastLensBucket;
@@ -110,18 +144,25 @@ export class SkyRenderer {
         }
 
         if (dimsChanged) {
-            this.lastDims = { ...dims };
+            this.lastDims = {
+                left: 0 as ScreenX,
+                top: 0 as ScreenY,
+                right: 0 + dims.width as ScreenX,
+                bottom: 0 + dims.height as ScreenY
+            };
         }
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawGrid(ctx, dims, isSouthern, viewport);
 
         // Horizon line
-        ctx.strokeStyle = "#333";
-        ctx.beginPath();
-        ctx.moveTo(0, dims.height / 2);
-        ctx.lineTo(dims.width, dims.height / 2);
-        ctx.stroke();
+        if (!viewport) {
+            ctx.strokeStyle = "#333";
+            ctx.beginPath();
+            ctx.moveTo(0, dims.height / 2);
+            ctx.lineTo(dims.width, dims.height / 2);
+            ctx.stroke();
+        }
 
         if (horizonProfile) {
             drawHorizon(ctx, horizonProfile, dims, isSouthern, viewport);
@@ -177,29 +218,34 @@ export class SkyRenderer {
         daysSinceJ2000: DaysSinceJ2000,
         latRad: Radians,
         lonRad: Radians,
-        dims: { width: number; height: number },
+        dims: { width: ScreenWidth; height: ScreenHeight },
         isSouthern: boolean,
         refractionModel: RefractionModel,
         coordFn: (daysSinceJ2000: DaysSinceJ2000) => EquatorialCoords,
         ctx: CanvasRenderingContext2D,
         viewport?: Viewport,
     ): void {
+
         const track = BODY_TRACKS[name];
         if (!track) return;
 
-        if (!this.trackCacheFull.has(name)) {
-            this.trackCacheFull.set(name, buildBodyTrackPath(
-                daysSinceJ2000, latRad, lonRad, dims, isSouthern,
-                coordFn, track, refractionModel
-            ));
-        }
+        const cache = viewport ? this.trackCacheLens : this.trackCacheFull;
 
-        strokeBodyTrack(ctx, this.trackCacheFull.get(name)!, track.color);
+        let path = cache.get(name);
+        if (!path) {
+            path = buildBodyTrackPath(
+                daysSinceJ2000, latRad, lonRad, dims, isSouthern,
+                coordFn, track, refractionModel, viewport,
+                viewport ? this.lastCachedWorldRect ?? undefined : undefined,
+            )
+            cache.set(name, path);
+        }
+        strokeBodyTrack(ctx, path, track.color, viewport);
     }
 
     private drawBody(
         name: BodyName,
-        dims: { width: number; height: number },
+        dims: { width: ScreenWidth; height: ScreenHeight },
         horizontalCoords: HorizontalCoords,
         isSouthern: boolean,
         bodyRenderer: BodyRenderer,
@@ -210,8 +256,48 @@ export class SkyRenderer {
         if (!track) return;
 
         const { color, size, symbol } = track;
-        const pos = getEquirectangularXY(horizontalCoords.azimuthRad, horizontalCoords.altitudeRad, dims, isSouthern);
+        const pos = getEquirectangularXY(
+            horizontalCoords.azimuthRad,
+            horizontalCoords.altitudeRad,
+            dims,
+            isSouthern,
+            !!viewport
+        );
         bodyRenderer(ctx, pos, size, color, symbol, viewport);
+    }
+
+    private shouldRefreshFullCache(days: DaysSinceJ2000, currentDims: ScreenRect): boolean {
+        const currentWidth = currentDims.right - currentDims.left;
+        const currentHeight = currentDims.bottom - currentDims.top;
+
+        const lastWidth = this.lastDims.right - this.lastDims.left;
+        const lastHeight = this.lastDims.bottom - this.lastDims.top;
+
+        if (currentWidth !== lastWidth || currentHeight !== lastHeight) {
+            return true;
+        }
+
+        const timeDelta = Math.abs(days - this.lastFullBucket);
+        if (timeDelta > this.TRACK_RECOMPUTE_THRESHOLD) return true;
+
+        return false;
+    }
+
+    private shouldRefreshLensCache(viewport: Viewport, days: DaysSinceJ2000, currentDims: ScreenRect): boolean {
+        const currentW = currentDims.right - currentDims.left;
+        const currentH = currentDims.bottom - currentDims.top;
+        const lastW = this.lastDims.right - this.lastDims.left;
+        const lastH = this.lastDims.bottom - this.lastDims.top;
+
+        if (currentW !== lastW || currentH !== lastH) return true;
+
+        const timeDelta = Math.abs(days - this.lastLensBucket);
+        if (timeDelta > this.TRACK_RECOMPUTE_THRESHOLD) return true;
+
+        if (!this.lastCachedWorldRect || !containsWorldRect(this.lastCachedWorldRect, viewport.world)) {
+            return true;
+        }
+        return false;
     }
 }
 

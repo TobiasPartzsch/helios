@@ -1,7 +1,8 @@
 import { loadRouteCsv, parseRouteCsv } from "../core/routes/parseCsv";
 import { RoutePoint } from "../core/routes/types";
 import { engine } from "../core/simulation/instance";
-import { dateToJulianDate, DaysSinceJ2000, getDaysSinceJ2000 } from "../core/time";
+import { dateToJulianDate, getDaysSinceJ2000 } from "../core/time";
+import { DaysSinceJ2000 } from "../core/time/types";
 import { UI } from "./elements";
 import { setRouteMode } from "./simulationController";
 
@@ -126,7 +127,6 @@ function applyRoutePoint(index: number) {
  * Synchronizes the Route Slider and Progress Label based on a timestamp.
  * This is the "single source of truth" for the voyage's visual progress.
  */
-// src/ui/routeController.ts
 export function syncRouteUI(currentTimeDays: DaysSinceJ2000) {
     if (!cachedRouteStartDays || !cachedRouteEndDays) return;
 

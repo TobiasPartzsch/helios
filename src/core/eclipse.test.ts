@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { radToDeg } from "./angles";
 import { moonEclipticLatitudeRad, moonSunEclipticLongitudeDifferenceRad } from "./bodies/moon";
 import { isLunarEclipseCandidate, isSolarEclipseCandidate } from "./eclipse";
-import { asDaysSinceJ2000, DaysSinceJ2000, getDaysSinceJ2000 } from "./time";
+import { asDaysSinceJ2000, getDaysSinceJ2000 } from "./time";
+import { DaysSinceJ2000 } from "./time/types";
 
 describe("eclipse candidates", () => {
     it("detects a solar eclipse candidate near 2024-04-08", () => {

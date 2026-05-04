@@ -1,5 +1,6 @@
 import { engine } from "./core/simulation/instance";
 import { daysSinceJ2000ToUnixMs } from "./core/time/julian";
+import { DeltaMs } from "./core/time/types";
 import { updateTelemetryAndRender } from "./render/orchestrator";
 import "./style.css";
 import { initBodyController } from "./ui/bodyController";
@@ -26,7 +27,7 @@ function animate(timestamp: number) {
     const start = performance.now();
 
     if (!lastTimestamp) lastTimestamp = timestamp;
-    const dt = timestamp - lastTimestamp;
+    const dt = timestamp - lastTimestamp as DeltaMs;
     lastTimestamp = timestamp;
 
     // The Engine is the Single Source of Truth for Time/State

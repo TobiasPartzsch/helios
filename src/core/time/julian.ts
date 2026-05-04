@@ -1,8 +1,8 @@
+import { DaysSinceJ2000 } from "./types";
+
 /**
  * Standard J2000.0 Epoch (January 1, 2000, 12:00 UTC)
  */
-export type DaysSinceJ2000 = number & { __brand: "DaysSinceJ2000" };
-
 export const J2000_EPOCH = 2451545.0;
 export const JULIAN_CENTURY = 36525.0;
 

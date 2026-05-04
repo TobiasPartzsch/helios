@@ -3,9 +3,10 @@ import { EquatorialCoords } from "../core/coordinates";
 import { equatorialToHorizontal } from "../core/coordinates/transforms";
 import { HorizonProfile } from "../core/horizon";
 import { HALF_PI, PI, TWO_PI } from "../core/math";
-import { DaysSinceJ2000, localSiderealTimeRad } from "../core/time";
+import { localSiderealTimeRad } from "../core/time";
+import { DaysSinceJ2000 } from "../core/time/types";
 import { RefractionModel } from "../core/types";
-import { Viewport, WorldPoint, WorldX, WorldY } from "./types";
+import { ScreenHeight, ScreenWidth, Viewport, VIRTUAL_WORLD_HEIGHT, VIRTUAL_WORLD_WIDTH, WorldPoint, WorldRect, WorldX, WorldY } from "./types";
 import { mapWorldPoint, pointInWorldRect, worldToScreen } from "./viewport";
 
 export interface CanvasDimensions {
@@ -21,6 +22,8 @@ export interface TrackConfig {
     symbol: string;
 }
 
+const VIRTUAL_WIDTH = TWO_PI
+
 /**
  * Maps Azimuth/Altitude (radians) to Canvas X/Y coordinates
  * using an Equirectangular projection.
@@ -28,31 +31,28 @@ export interface TrackConfig {
 export function getEquirectangularXY(
     azimuthRad: Radians,
     altitudeRad: Radians,
-    dimensions: { width: number, height: number },
-    isSouthern: boolean = false
+    dimensions: { width: ScreenWidth; height: ScreenHeight },
+    isSouthern: boolean = false,
+    useVirtual: boolean = false,
 ): WorldPoint {
     const { width, height } = dimensions;
 
-    // To center South (180°), we shift the azimuth 
-    // such that 180° becomes 0° (the new center).
-    // Then we add half the width.
+    // Calculate the "Base" World Position
+    // If there is a viewport, we project onto the VIRTUAL scale.
+    // If not, we project onto the PHYSICAL pixels of the canvas.
+    const targetWidth = useVirtual ? VIRTUAL_WORLD_WIDTH : width;
+    const targetHeight = useVirtual ? VIRTUAL_WORLD_HEIGHT : height;
 
-    const centerOffset = isSouthern ? 0 : PI;
+    const centerOffset = isSouthern ? 0 : Math.PI;
     let shiftedAz = azimuthRad - centerOffset;
 
-    // Normalize to [-PI, PI]
-    while (shiftedAz <= -PI) shiftedAz += TWO_PI;
-    while (shiftedAz > PI) shiftedAz -= TWO_PI;
+    while (shiftedAz <= -Math.PI) shiftedAz += TWO_PI;
+    while (shiftedAz > Math.PI) shiftedAz -= TWO_PI;
 
-    // Map [-PI, PI] to [0, width]
-    // (shiftedAz / 2PI) gives [-0.5, 0.5]. 
-    // Adding 0.5 gives [0, 1].
-    const x = (shiftedAz / (TWO_PI) + 0.5) * width;
+    const x = (shiftedAz / TWO_PI + 0.5) * targetWidth;
+    const y = altToY(altitudeRad, targetHeight);
 
-    // Y-axis: Altitude PI/2 (top) to -PI/2 (bottom)
-    const y = altToY(altitudeRad, height);
-
-    return { x, y } as WorldPoint;
+    return { x: x as WorldX, y: y as WorldY };
 }
 
 export function drawBody(
@@ -94,41 +94,82 @@ export function drawBodySymbol(
 
 export function drawGrid(
     ctx: CanvasRenderingContext2D,
-    dimensions: { width: number, height: number },
+    dimensions: { width: ScreenWidth, height: ScreenHeight },
     isSouthern: boolean,
     viewport?: Viewport,
 ) {
     const { width, height } = dimensions;
+    const screenWidth = viewport ? Number(viewport.screen.right - viewport.screen.left) : width;
+    const screenHeight = viewport ? Number(viewport.screen.bottom - viewport.screen.top) : height;
 
     ctx.strokeStyle = '#222'; // Subtle dark grey
     ctx.lineWidth = 1;
     ctx.font = '12px Arial';
     ctx.fillStyle = '#444';
 
-    // 1. Draw Altitude Lines (Parallels)
-    // Every 30 degrees from -90 to 90
+    if (viewport) {
+        drawAltLinesLens(ctx, height, viewport, width);
+        drawAzLinesLens(ctx, dimensions, isSouthern, viewport, height, width);
+    } else {
+        drawAltLinesFull(ctx, height, width);
+        drawAzLinesFull(ctx, dimensions, isSouthern, height, width);
+    }
+}
+
+function drawAltLinesFull(ctx: CanvasRenderingContext2D, height: number, width: number) {
     ctx.beginPath();
     for (let altDeg = -90; altDeg <= 90; altDeg += 30) {
         const altRad = degToRad(altDeg);
         const worldY = altToY(altRad, height);
 
-        const left = mapWorldPoint(0 as WorldX, worldY, viewport);
-        const right = mapWorldPoint(width as WorldX, worldY, viewport);
+        const left = mapWorldPoint(0 as WorldX, worldY);
+        const right = mapWorldPoint(width as WorldX, worldY);
 
         ctx.moveTo(left.x, left.y);
         ctx.lineTo(right.x, right.y);
         ctx.fillText(`${altDeg}°`, 5, left.y - 2);
     }
     ctx.stroke();
+}
 
-    // 2. Draw Azimuth Lines (Meridians)
+function drawAltLinesLens(ctx: CanvasRenderingContext2D, height: number, viewport: Viewport, width: number) {
+    ctx.beginPath();
+    for (let altDeg = -90; altDeg <= 90; altDeg += 30) {
+        const altRad = degToRad(altDeg);
+        const worldY = altToY(altRad, VIRTUAL_WORLD_HEIGHT);
+
+        if (worldY < viewport.world.top || worldY > viewport.world.bottom) {
+            continue;
+        }
+
+        const left = mapWorldPoint(viewport.world.left, worldY, viewport);
+        const right = mapWorldPoint(viewport.world.right, worldY, viewport);
+
+        ctx.moveTo(left.x, left.y);
+        ctx.lineTo(right.x, right.y);
+
+        ctx.save();
+        ctx.fillStyle = "#aaaaaa";
+        ctx.font = "10px Arial";
+        ctx.fillText(`${altDeg}°`, left.x + 5, left.y - 2);
+        ctx.restore();
+    }
+    ctx.stroke();
+}
+
+function drawAzLinesFull(
+    ctx: CanvasRenderingContext2D,
+    dimensions: { width: ScreenWidth; height: ScreenHeight; },
+    isSouthern: boolean,
+    height: number, width: number
+) {
     ctx.beginPath();
     for (let azDeg = 0; azDeg < 360; azDeg += 45) {
         const azRad = degToRad(azDeg);
         const worldX = getEquirectangularXY(azRad, 0 as Radians, dimensions, isSouthern).x;
 
-        const top = mapWorldPoint(worldX, 0 as WorldY, viewport);
-        const bottom = mapWorldPoint(worldX, height as WorldY, viewport);
+        const top = mapWorldPoint(worldX, 0 as WorldY);
+        const bottom = mapWorldPoint(worldX, height as WorldY);
 
         ctx.moveTo(top.x, top.y);
         ctx.lineTo(bottom.x, bottom.y);
@@ -142,7 +183,7 @@ export function drawGrid(
             const metrics = ctx.measureText(label);
             const pad = 0;
             // Clamp so label never bleeds off either edge
-            const halfLabel = metrics.width / 2
+            const halfLabel = metrics.width / 2;
             const lx = Math.max(halfLabel, Math.min(width - halfLabel, bottom.x));
             const ly = height - 18;
             ctx.fillStyle = "rgba(0,0,0,0.6)";
@@ -154,7 +195,62 @@ export function drawGrid(
         }
     }
     ctx.stroke();
+}
 
+function drawAzLinesLens(
+    ctx: CanvasRenderingContext2D,
+    dimensions: { width: ScreenWidth; height: ScreenHeight; },
+    isSouthern: boolean,
+    viewport: Viewport,
+    height: number,
+    width: number
+) {
+    ctx.beginPath();
+    for (let azDeg = 0; azDeg < 360; azDeg += 45) {
+        const azRad = degToRad(azDeg);
+        const worldX = getEquirectangularXY(
+            azRad,
+            0 as Radians,
+            dimensions,
+            isSouthern,
+            true
+        ).x;
+
+        if (worldX < viewport.world.left || worldX > viewport.world.right) {
+            continue;
+        }
+
+        if (worldX < viewport.world.left || worldX > viewport.world.right) {
+            continue;
+        }
+
+        const top = mapWorldPoint(worldX, viewport.world.top, viewport);
+        const bottom = mapWorldPoint(worldX, viewport.world.bottom, viewport);
+
+        ctx.moveTo(top.x, top.y);
+        ctx.lineTo(bottom.x, bottom.y);
+
+        const label = getCardinalLabel(azDeg as Degrees);
+        if (label) {
+            ctx.save();
+            ctx.textAlign = "center";
+            ctx.font = "bold 12px Arial";
+            // Background pill for contrast
+            const metrics = ctx.measureText(label);
+            const pad = 0;
+            // Clamp so label never bleeds off either edge
+            const halfLabel = metrics.width / 2;
+            const lx = Math.max(halfLabel, Math.min(width - halfLabel, bottom.x));
+            const ly = height - 18;
+            ctx.fillStyle = "rgba(0,0,0,0.6)";
+            ctx.fillRect(lx - halfLabel - pad, ly - pad, metrics.width + pad * 2, 16);
+            // Label text
+            ctx.fillStyle = "#aaaaaa";
+            ctx.fillText(label, lx, ly);
+            ctx.restore();
+        }
+    }
+    ctx.stroke();
 }
 
 function getCardinalLabel(az: Degrees): string | null {
@@ -172,65 +268,124 @@ export function buildBodyTrackPath(
     daysSinceJ2000: DaysSinceJ2000,
     latRad: Radians,
     lonRad: Radians,
-    dimensions: { width: number, height: number },
+    dimensions: { width: ScreenWidth, height: ScreenHeight },
     isSouthern: boolean,
     getEqCoords: (daysSinceJ2000: DaysSinceJ2000) => EquatorialCoords,
     config: TrackConfig,
     refractionModel: RefractionModel = RefractionModel.None,
+    viewport?: Viewport,
+    clippingRect?: WorldRect,
 ): Path2D {
-    const { windowDays, sampleIntervalDays: stepInDays } = config;
-    const steps = Math.floor(windowDays / stepInDays);
-
+    const sampleTimes = getTrackSampleTimes(daysSinceJ2000, config, viewport);
     const path = new Path2D();
-    let lastShiftedAz: number | null = null;
-
-    const startDays = daysSinceJ2000 - windowDays / 2;
     const fixedEq = getEqCoords(daysSinceJ2000);
+    const bounds = clippingRect ?? viewport?.world;
+
+    let lastShiftedAz: number | null = null;
     let firstPos: { x: number, y: number } | null = null;
+    let wasVisible = false;
 
-    for (let i = 0; i <= steps; i++) {
-        const isLast = i === steps;
-        const sampleDays = isLast
-            ? (daysSinceJ2000 + windowDays / 2) as DaysSinceJ2000
-            : (startDays + (i * stepInDays)) as DaysSinceJ2000;
-
+    let samples = 0;
+    for (const sampleDays of sampleTimes) {
+        samples += 1;
         const lstRad = localSiderealTimeRad(sampleDays, lonRad);
         const horiz = equatorialToHorizontal(fixedEq, latRad, lstRad, refractionModel);
+        const pos = getEquirectangularXY(
+            horiz.azimuthRad,
+            horiz.altitudeRad,
+            dimensions,
+            isSouthern,
+            !!viewport,
+        );
+        if (viewport) {
+            if (clippingRect && !pointInWorldRect(pos, clippingRect)) {
+                wasVisible = false;
+                continue;
+            }
 
-        const centerOffset = isSouthern ? 0 : PI;
-        let shiftedAz = horiz.azimuthRad - centerOffset;
-        while (shiftedAz <= -PI) shiftedAz += TWO_PI;
-        while (shiftedAz > PI) shiftedAz -= TWO_PI;
-
-        const isWrap = lastShiftedAz !== null && Math.abs(shiftedAz - lastShiftedAz) > PI;
-
-        lastShiftedAz = shiftedAz;
-
-        const pos = getEquirectangularXY(horiz.azimuthRad, horiz.altitudeRad, dimensions, isSouthern);
-        if (i === 0) {
-            firstPos = pos;
-            path.moveTo(pos.x, pos.y);
-        } else if (isWrap) {
-            path.moveTo(pos.x, pos.y);
+            if (!wasVisible) {
+                path.moveTo(pos.x, pos.y);
+            } else {
+                path.lineTo(pos.x, pos.y);
+            }
+            wasVisible = true;
         } else {
-            path.lineTo(pos.x, pos.y);
+            const centerOffset = isSouthern ? 0 : PI;
+            let shiftedAz = horiz.azimuthRad - centerOffset;
+            while (shiftedAz <= -PI) shiftedAz += TWO_PI;
+            while (shiftedAz > PI) shiftedAz -= TWO_PI;
+
+            const isWrap = lastShiftedAz !== null && Math.abs(shiftedAz - lastShiftedAz) > PI;
+            lastShiftedAz = shiftedAz;
+
+            if (!firstPos) {
+                firstPos = pos;
+                path.moveTo(pos.x, pos.y);
+            } else if (isWrap) {
+                path.moveTo(pos.x, pos.y);
+            } else {
+                path.lineTo(pos.x, pos.y);
+            }
         }
     }
-    if (firstPos) {
-        path.lineTo(firstPos.x, firstPos.y);
-    }
-
     return path;
 }
 
-export function strokeBodyTrack(ctx: CanvasRenderingContext2D, path: Path2D, color: string): void {
+function getTrackSampleTimes(
+    daysSinceJ2000: DaysSinceJ2000,
+    config: TrackConfig,
+    viewport?: Viewport,
+): DaysSinceJ2000[] {
+    let { sampleIntervalDays: stepInDays } = config;
+    let windowDays = config.windowDays
+    if (viewport) {
+        const worldSpan = viewport.world.right - viewport.world.left
+        const screenSpan = viewport.screen.right - viewport.screen.left
+        const worldFraction = worldSpan / screenSpan
+        windowDays = config.windowDays * worldFraction * 1.5;
+        stepInDays = stepInDays / viewport.zoom;
+    }
+
+    const startDays = daysSinceJ2000 - windowDays / 2;
+    const steps = Math.floor(windowDays / stepInDays);
+
+    const samples: DaysSinceJ2000[] = [];
+    for (let i = 0; i <= steps; i++) {
+        samples.push((startDays + i * stepInDays) as DaysSinceJ2000);
+    }
+
+    return samples;
+}
+
+export function strokeBodyTrack(
+    ctx: CanvasRenderingContext2D,
+    path: Path2D,
+    color: string,
+    viewport?: Viewport
+): void {
+    ctx.save();
+
+    if (viewport) {
+        // 1. Scale the context: Physical Pixels / World Units visible
+        const scaleX = (viewport.screen.right - viewport.screen.left) / (viewport.world.right - viewport.world.left);
+        const scaleY = (viewport.screen.bottom - viewport.screen.top) / (viewport.world.bottom - viewport.world.top);
+
+        ctx.scale(scaleX, scaleY);
+
+        // 2. Translate to align the viewport's 'left/top' with the canvas origin (0,0)
+        ctx.translate(-viewport.world.left, -viewport.world.top);
+
+        ctx.lineWidth = 1 / scaleX;
+    } else {
+        ctx.lineWidth = 1;
+    }
+
     ctx.setLineDash([4, 4]);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
     ctx.globalAlpha = 0.5;
+
     ctx.stroke(path);
-    ctx.setLineDash([]);
-    ctx.globalAlpha = 1.0;
+    ctx.restore();
 }
 
 /**
@@ -293,10 +448,12 @@ export function drawMoonFace(
 export function drawHorizon(
     ctx: CanvasRenderingContext2D,
     profile: HorizonProfile,
-    dimensions: { width: number, height: number },
+    dimensions: { width: ScreenWidth, height: ScreenHeight },
     isSouthern: boolean,
     viewport?: Viewport,
 ) {
+    // TODO: handle viewport correctly
+    if (viewport) return;
     const { points } = profile;
     if (points.length === 0) return;
 

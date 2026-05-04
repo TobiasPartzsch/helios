@@ -2,7 +2,7 @@ import { Radians } from "../angles";
 import type { EquatorialCoords } from "../coordinates";
 import { eclipticCartesianToEquatorial, sphericalToCartesian, subtractCartesian } from "../coordinates/transforms";
 import { normalizeRad } from "../math";
-import { DaysSinceJ2000 } from "../time/julian";
+import { DaysSinceJ2000 } from "../time/types";
 import { vsop87 } from "./vsop87";
 
 export const MEAN_OBLIQUITY_J2000_DEG = 23.439291111;

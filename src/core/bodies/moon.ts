@@ -3,7 +3,7 @@ import type { EclipticCoords, EquatorialCoords } from "../coordinates";
 import { eclipticCartesianToEquatorial } from "../coordinates/transforms";
 import { normalizeRad, signedAngularDifferenceRad } from "../math";
 import { sunGeocentricEquatorialCoordinates } from "../orbit/propagate";
-import { DaysSinceJ2000 } from "../time";
+import { DaysSinceJ2000 } from "../time/types";
 import { sunEclipticLongitudeRad } from "./sun";
 
 const MOON_MEAN_LONGITUDE = {

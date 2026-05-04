@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { degToRad, Radians, radToDeg } from "../angles";
 import { eclipticCartesianToEquatorial, sphericalToCartesian, subtractCartesian } from "../coordinates/transforms";
 import { angularDifferenceDeg, } from "../math";
-import { DaysSinceJ2000, J2000_EPOCH } from "../time";
+import { J2000_EPOCH } from "../time";
+import { DaysSinceJ2000 } from "../time/types";
 import { planetEquatorialReferenceCases } from "./fixtures/planet-equatorial-reference";
 import { MEAN_OBLIQUITY_J2000_DEG, planetGeocentricEquatorialCoordinates } from "./propagate";
 

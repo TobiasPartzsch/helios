@@ -1,6 +1,7 @@
 import { Radians } from "../angles";
 import { normalizeRad } from "../math";
-import { DaysSinceJ2000, JULIAN_CENTURY } from "../time/julian";
+import { JULIAN_CENTURY } from "../time/julian";
+import { DaysSinceJ2000 } from "../time/types";
 import { VSOP87_DATA } from "./vsop87Data";
 import type { PlanetSeries } from "./vsop87Types";
 

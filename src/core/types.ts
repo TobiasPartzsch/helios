@@ -1,7 +1,7 @@
 import { BodyName } from "../ui/elements";
 import { Degrees } from "./angles";
 import { HorizonProfile } from "./horizon";
-import { DaysSinceJ2000 } from "./time/julian";
+import { DaysSinceJ2000 } from "./time/types";
 
 export enum SimulationSpeedUnit {
     RealTime = 1,

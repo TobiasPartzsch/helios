@@ -3,7 +3,7 @@ import {
     moonEclipticLatitudeRad,
     moonSunEclipticLongitudeDifferenceRad,
 } from "./bodies/moon";
-import { DaysSinceJ2000 } from "./time";
+import { DaysSinceJ2000 } from "./time/types";
 
 export interface EclipseCandidateInfo {
     isCandidate: boolean;

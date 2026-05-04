@@ -1,4 +1,5 @@
-import { ScreenPoint, ScreenX, ScreenY, Viewport, WorldPoint, WorldRect, WorldX, WorldY } from "./types";
+import { LensState } from "../ui/lensController";
+import { ScreenPoint, ScreenX, ScreenY, Viewport, VIRTUAL_WORLD_HEIGHT, VIRTUAL_WORLD_WIDTH, WorldPoint, WorldRect, WorldX, WorldY } from "./types";
 
 export function worldToScreen(
     point: WorldPoint,
@@ -89,4 +90,34 @@ export function mapWorldPoint(
 ): WorldPoint | ScreenPoint {
     const point = { x, y };
     return viewport ? worldToScreen(point, viewport) : point;
+}
+
+export function computeViewport(state: LensState): Viewport {
+    const { cursorX, cursorY, displayW, displayH, zoomFactor } = state;
+
+    // Convert actual display pixel based data into virtual ones
+    const virtualCursorX = (cursorX / state.baseWorldWidth) * VIRTUAL_WORLD_WIDTH;
+    const virtualCursorY = (cursorY / state.baseWorldHeight) * VIRTUAL_WORLD_HEIGHT;
+    const virtualLensWidth = (displayW / state.baseWorldWidth) * VIRTUAL_WORLD_WIDTH;
+    const viewW = virtualLensWidth / zoomFactor;
+    const virtualLensHeight = (displayH / state.baseWorldHeight) * VIRTUAL_WORLD_HEIGHT;
+    const viewH = virtualLensHeight / zoomFactor;
+
+    return {
+        world: {
+            // These are coordinates in the 'simulation space'
+            left: (virtualCursorX - viewW / 2) as WorldX,
+            top: (virtualCursorY - viewH / 2) as WorldY,
+            right: (virtualCursorX + viewW / 2) as WorldX,
+            bottom: (virtualCursorY + viewH / 2) as WorldY,
+        },
+        screen: {
+            // These are the physical pixels on the lens canvas
+            left: 0 as ScreenX,
+            top: 0 as ScreenY,
+            right: 0 + displayW as ScreenX,
+            bottom: 0 + displayH as ScreenY,
+        },
+        zoom: zoomFactor,
+    };
 }
