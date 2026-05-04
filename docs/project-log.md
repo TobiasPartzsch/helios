@@ -224,3 +224,11 @@
 ### Quick optimization and refactor
 - cache points in routeController
 - use elements.UI objects instead of document lookups
+
+## Recent Progress
+### Astronomical Zoom & Virtual Coordinates
+- Virtual World System: Decoupled astronomical projection from physical canvas resolution by implementing a stable 3600-unit "Virtual World" coordinate system.
+- Branded Type Safety: Introduced strict TypeScript branding for ScreenWidth, WorldWidth, ScreenX, and WorldX to eliminate unit-mismatch bugs across the rendering pipeline.
+- Sliding Window Cache: Implemented an optimized Path2D cache for the lens that uses a spatial "Sliding Window" (WorldRect buffer), reducing recalculations during panning.
+- Dynamic Damping: Added zoom-sensitive input smoothing to the lens controller to provide stable tracking at high magnification.
+- Unification: Synchronized the horizon profile, celestial bodies, and diurnal tracks within the lens context, ensuring 1:1 alignment between the main sky and the zoomed view.

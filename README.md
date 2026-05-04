@@ -85,7 +85,7 @@ Solar and lunar rendering still use lightweight direct models suitable for visua
 - Invariant tests cover core math, time, coordinate, refraction, and orbit helper transformations
 
 ## Next Steps by priority
-- **Lens Controller Optimization:** The zoom lens remains the heaviest operation. Investigate caching the offscreen sky render or throttle updates during rapid mouse movement.
+- **Body distance from observer body:** Sort the bodies by distance from the observing one for rendering and later transit logic. Can probably be heavily cached.
 - **State Transition Refinement:** Improve the "wonky" feeling when switching between Horizon and Route modes while the simulation is playing. Ensure a clean "hand-off" of observer coordinates.
 - **Automated Playback Logic:** Implement logic to prevent "Play" execution if a route is selected but no CSV is loaded, or provide a default "stationary" behavior.- **Draw by distance:** Currently we draw bodies in an arbitrary order. We should probably go from farthest to closest.
 - **Eclipse refinement:** Move from candidate detection toward better event characterization and presentation.
