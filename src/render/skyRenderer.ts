@@ -4,7 +4,7 @@ import { sunEquatorialCoordinates } from "../core/bodies/sun";
 import { EquatorialCoords, HorizontalCoords } from "../core/coordinates";
 import { planetGeocentricEquatorialCoordinates } from "../core/orbit/propagate";
 import { DaysSinceJ2000 } from "../core/time/types";
-import { RefractionModel } from "../core/types";
+import { AU, RefractionModel } from "../core/types";
 import { BodyDisplayMode, BodyName } from "../ui/elements";
 import {
     buildBodyTrackPath,
@@ -27,6 +27,8 @@ type BodyRenderer = (
     symbol?: string,
     viewport?: Viewport,
 ) => void;
+type EquatorialProvider = (t: DaysSinceJ2000) => EquatorialCoords;
+
 
 const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
     sun: { windowDays: 1.0, sampleIntervalDays: 1 / 144, color: "#ffa500", size: 10, symbol: "☉" },  // 10-minute steps
@@ -43,19 +45,25 @@ const BODY_TRACKS: Partial<Record<BodyName, TrackConfig>> = {
 
 export class SkyRenderer {
     private ctx: CanvasRenderingContext2D;
-    private trackCacheFull: Map<string, Path2D> = new Map();
-    private trackCacheLens: Map<string, Path2D> = new Map();
-    private readonly TRACK_RECOMPUTE_THRESHOLD = 1 / 24; // 1 hour
     private lastDims: ScreenRect = {
         left: 0 as ScreenX,
         top: 0 as ScreenY,
         right: 0 as ScreenX,
         bottom: 0 as ScreenY,
     };
+
+    private readonly TRACK_RECOMPUTE_THRESHOLD = 1 / 24;
+    private readonly SORT_THRESHOLD = 1;
+    private readonly LENS_CACHE_MARGIN = 0.5;
+
+    private trackCacheFull: Map<string, Path2D> = new Map();
+    private trackCacheLens: Map<string, Path2D> = new Map();
+    private sortedBodyNames: BodyName[] = [];
+    private lastCachedWorldRect: WorldRect | null = null;
+
     private lastFullBucket: DaysSinceJ2000 = 0 as DaysSinceJ2000;
     private lastLensBucket: DaysSinceJ2000 = 0 as DaysSinceJ2000;
-    private lastCachedWorldRect: WorldRect | null = null;
-    private LENS_CACHE_MARGIN = 0.5;
+    private lastSortBucket: DaysSinceJ2000 = -1 as DaysSinceJ2000;
 
     constructor(canvas: HTMLCanvasElement) {
         this.ctx = canvas.getContext("2d")!;
@@ -69,13 +77,6 @@ export class SkyRenderer {
         }
         return { width: canvas.width as ScreenWidth, height: canvas.height as ScreenHeight };
     }
-
-    // static forOffscreen(width: number, height: number): { renderer: SkyRenderer; canvas: HTMLCanvasElement } {
-    //     const canvas = document.createElement("canvas");
-    //     canvas.width = width;
-    //     canvas.height = height;
-    //     return { renderer: new SkyRenderer(canvas), canvas };
-    // }
 
     render(
         state: SkyRenderState,
@@ -168,48 +169,32 @@ export class SkyRenderer {
             drawHorizon(ctx, horizonProfile, dims, isSouthern, viewport);
         }
 
+        this.updateSortOrder(state);
+
         // Tracks
-        if (bodies.sun.enabled && shouldDrawPath(bodies.sun.displayMode)) {
-            this.drawTrack(
-                "sun", daysSinceJ2000, latRad, lonRad, dims, isSouthern,
-                refractionModel, sunEquatorialCoordinates,
-                ctx, viewport,
-            );
+        for (const name of this.sortedBodyNames) {
+            if (bodies[name].enabled && shouldDrawPath(bodies[name].displayMode)) {
+                const provider = this.getEquatorialProvider(name);
+                this.drawTrack(
+                    name, daysSinceJ2000, latRad, lonRad, dims, isSouthern,
+                    refractionModel, provider, // Use the provider here
+                    ctx, viewport
+                );
+            }
         }
 
-        if (bodies.moon.enabled && shouldDrawPath(bodies.moon.displayMode)) {
-            this.drawTrack(
-                "moon", daysSinceJ2000, latRad, lonRad, dims, isSouthern,
-                refractionModel, moonEquatorialCoordinates,
-                ctx, viewport,
-            );
-        }
-
-        for (const [name] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
-            if (!bodies[name].enabled || !shouldDrawPath(bodies[name].displayMode)) continue;
-            this.drawTrack(
-                name, daysSinceJ2000, latRad, lonRad, dims, isSouthern, refractionModel,
-                (t) => planetGeocentricEquatorialCoordinates(name, t),
-                ctx, viewport,
-            );
-        }
-
+        // Bodies
         const bodyRenderer: BodyRenderer = useSymbols ? drawBodySymbol : drawBody;
 
-        // Sun
-        if (bodies["sun"].enabled && shouldDrawBody(bodies.sun.displayMode)) {
-            this.drawBody("sun", dims, sunHoriz!, isSouthern, bodyRenderer, ctx, viewport)
-        }
+        for (const name of this.sortedBodyNames) {
+            const bodyState = bodies[name];
+            if (!bodyState.enabled || !shouldDrawBody(bodyState.displayMode)) continue;
 
-        // Moon
-        if (moonHoriz && shouldDrawBody(bodies.moon.displayMode)) {
-            this.drawBody("moon", dims, moonHoriz, isSouthern, bodyRenderer, ctx, viewport)
-        }
+            const horiz = this.getHorizontalCoords(name, state)
 
-        // Planets
-        for (const [name, horiz] of Object.entries(planetHorizMap) as [BodyName, HorizontalCoords][]) {
-            if (!bodies[name].enabled || !shouldDrawBody(bodies[name].displayMode)) continue;
-            this.drawBody(name, dims, horiz, isSouthern, bodyRenderer, ctx, viewport)
+            if (horiz) {
+                this.drawBody(name, dims, horiz, isSouthern, bodyRenderer, ctx, viewport);
+            }
         }
     }
 
@@ -298,6 +283,37 @@ export class SkyRenderer {
             return true;
         }
         return false;
+    }
+
+    private updateSortOrder(state: SkyRenderState): void {
+        const { sunHoriz, moonHoriz, planetHorizMap, daysSinceJ2000 } = state;
+
+        const currentBucket = (Math.floor(daysSinceJ2000 / this.SORT_THRESHOLD) * this.SORT_THRESHOLD) as DaysSinceJ2000;
+        if (currentBucket === this.lastSortBucket && this.sortedBodyNames.length > 0) return;
+
+        this.sortedBodyNames = (Object.entries(state.distanceMap) as [BodyName, AU][])
+            .sort(([, distA], [, distB]) => distB - distA)
+            .map(([name]) => name);
+
+        this.lastSortBucket = currentBucket;
+    }
+
+    private getHorizontalCoords(name: BodyName, state: SkyRenderState): HorizontalCoords {
+        switch (name) {
+            case "sun": return state.sunHoriz!;
+            case "moon": return state.moonHoriz!;
+            default:
+                return state.planetHorizMap[name]!;
+        }
+    }
+
+    private getEquatorialProvider(name: BodyName): EquatorialProvider {
+        switch (name) {
+            case "sun": return sunEquatorialCoordinates;
+            case "moon": return moonEquatorialCoordinates;
+            default:
+                return (t: DaysSinceJ2000) => planetGeocentricEquatorialCoordinates(name, t);
+        }
     }
 }
 

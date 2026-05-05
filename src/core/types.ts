@@ -43,3 +43,8 @@ export interface SimulationState {
     timeUnit: SimulationSpeedUnit;
     useSymbols: boolean;
 }
+
+export type AU = number & { readonly __brand: "AU" };
+
+export const KM_PER_AU = 149597870.7;
+export const kmToAU = (km: number): AU => (km / KM_PER_AU) as AU;

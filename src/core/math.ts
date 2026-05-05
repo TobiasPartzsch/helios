@@ -42,3 +42,7 @@ export function angularDifferenceDeg(a: number, b: number): number {
 export function signedAngularDifferenceRad(a: number, b: number): number {
     return ((a - b + PI) % TWO_PI + TWO_PI) % TWO_PI - PI;
 }
+
+export function vectorMagnitude(x: number, y: number, z: number): number {
+    return Math.sqrt(x * x + y * y + z * z);
+}

@@ -5,12 +5,13 @@ import { EquatorialCoords, HorizontalCoords } from "../core/coordinates";
 import { equatorialToHorizontal } from "../core/coordinates/transforms";
 import { getLunarEclipseCandidateInfo, getSolarEclipseCandidateInfo } from "../core/eclipse";
 import { normalizeRad, radToHours } from "../core/math";
-import { planetGeocentricEquatorialCoordinates } from "../core/orbit/propagate";
+import { geocentricDistance, planetGeocentricEquatorialCoordinates } from "../core/orbit/propagate";
 import { daysSinceJ2000ToUnixMs, J2000_EPOCH } from "../core/time";
 import { formatEclipseInfo, formatEoT, formatHours } from "../core/time/format";
 import { localSiderealTimeRad } from "../core/time/sidereal";
 import { calculateEoT, calculateLMTFromDays } from "../core/time/telemetry";
-import { SimulationState } from "../core/types";
+import { DaysSinceJ2000 } from "../core/time/types";
+import { AU, SimulationState } from "../core/types";
 import { applyEasterEgg } from "../ui/easteregg";
 import { BODY_NAMES, BodyName, UI } from "../ui/elements";
 import { LensController } from "../ui/lensController";
@@ -23,6 +24,10 @@ const PLANET_NAMES = BODY_NAMES.filter((n) => n !== "sun" && n !== "moon");
 const skyRenderer = new SkyRenderer(UI.canvas.main);
 const moonFaceRenderer = new MoonFaceRenderer(UI.canvas.moonFace);
 const lensController = new LensController();
+
+let distanceCache: Partial<Record<BodyName, AU>> = {};
+let lastDistanceUpdate: DaysSinceJ2000 = -1 as DaysSinceJ2000;
+const DISTANCE_REFRESH_THRESHOLD = 1; // 1 day
 
 export function updateTelemetryAndRender(state: SimulationState) {
     const { time: daysSinceJ2000, observer, bodies, refractionModel } = state;
@@ -79,6 +84,9 @@ export function updateTelemetryAndRender(state: SimulationState) {
         }
     }
 
+    // Distances to Earth
+    const distanceMap = getUpdatedDistances(daysSinceJ2000);
+
     // High-precision math for Telemetry
     // (Adding 0.5 because J2000 epoch is at Noon UTC)
     const dayFraction = (daysSinceJ2000 + 0.5) % 1;
@@ -93,18 +101,19 @@ export function updateTelemetryAndRender(state: SimulationState) {
 
     applyEasterEgg(date)
 
-    // 3. UI Telemetry Output
+    // UI Telemetry Output
     outputs.lst.innerText = formatHours(radToHours(lstRad));
     outputs.lmt.innerText = formatHours(lmtHours);
     outputs.eot.innerText = formatEoT(eotHours);
     UI.outputs.jd.innerText = fullJD.toFixed(5);
 
-    // 4. Final Render Call
+    // Final Render Call
     const renderState: SkyRenderState = {
         daysSinceJ2000, latRad, lonRad,
         sunHoriz: sunHoriz ?? undefined,
         moonHoriz: moonHoriz ?? undefined,
         planetHorizMap,
+        distanceMap,
         bodies: state.bodies,
         horizonProfile: state.horizonProfile,
         refractionModel: state.refractionModel,
@@ -120,4 +129,19 @@ function formatAltAz(horiz: HorizontalCoords): string {
 
 function formatRaDec(eq: EquatorialCoords): string {
     return `RA: ${radToHours(eq.rightAscensionRad).toFixed(3)}h, Dec: ${radToDeg(eq.declinationRad).toFixed(2)}°`;
+}
+
+function getUpdatedDistances(currentTime: DaysSinceJ2000): Partial<Record<BodyName, AU>> {
+    if (Math.abs(currentTime - lastDistanceUpdate) < DISTANCE_REFRESH_THRESHOLD && Object.keys(distanceCache).length > 0) {
+        return distanceCache;
+    }
+
+    const newDistances: Partial<Record<BodyName, AU>> = {};
+    for (const name of BODY_NAMES) {
+        newDistances[name] = geocentricDistance(name, currentTime);
+    }
+
+    distanceCache = newDistances;
+    lastDistanceUpdate = currentTime;
+    return newDistances;
 }

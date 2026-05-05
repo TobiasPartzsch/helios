@@ -2,7 +2,7 @@ import { Radians } from "../core/angles";
 import { HorizontalCoords } from "../core/coordinates";
 import { HorizonProfile } from "../core/horizon";
 import { DaysSinceJ2000 } from "../core/time/types";
-import { RefractionModel } from "../core/types";
+import { AU, RefractionModel } from "../core/types";
 import { BodyConfig, BodyName } from "../ui/elements";
 
 export type ScreenX = number & { readonly __brand: "ScreenX" };
@@ -28,6 +28,7 @@ export interface SkyRenderState {
     sunHoriz?: HorizontalCoords;
     moonHoriz?: HorizontalCoords;
     planetHorizMap: Partial<Record<BodyName, HorizontalCoords>>;
+    distanceMap: Partial<Record<BodyName, AU>>;
     bodies: Record<BodyName, BodyConfig>;
     horizonProfile: HorizonProfile | null;
     refractionModel: RefractionModel;
